@@ -1,0 +1,46 @@
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: recruiter_db
+      DATABASE_URL: "postgresql://user:password@db:5432/recruiter_db?schema=public"
+
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/code/app
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+  minio:
+      image: minio/minio:latest
+      environment:
+        MINIO_ROOT_USER: user
+        MINIO_ROOT_PASSWORD: password
+      ports:
+        -  9000:9000 #to talk to our backend
+        -  9001:9001 #to log in 
+      command: server /data --console-address ":9001" #start server save in data and start ui website in port 9001
+      volumes:
+          minio_data:/data
+      
+
+
+volumes:
+  postgres_data:
+  minio_data:
