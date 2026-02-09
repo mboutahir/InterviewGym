@@ -44,4 +44,14 @@ model InterviewSessions {
   userId         String
   user           User     @relation(fields: [userId], references: [id])
   createdAt      DateTime @default(now())
+  Messages        InterviewMessage[]
+}
+model InterviewMessage {
+  id            String    @id @default(uuid())
+  role          String
+  content       String
+  createdAt     DateTime  @default(now())
+
+  sessionId     String
+  Session       InterviewSessions @relation(fields: [sessionId], references: [id])
 }

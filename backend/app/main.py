@@ -1,14 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict
-from fastapi import HTTPException, status, File, UploadFile, Form
-from app.ai import analyze_resume
+from fastapi import HTTPException, status, File, UploadFile, Form, BackgroundTasks
+#Standard API responses return Text
+from fastapi.responses import FileResponse
 from app.utils import extract_pdf_toString
 from prisma import Prisma
 import json
 import uuid
+from urllib.parse import quote
 from app.services.rag import RAGService
 from app.services.s3 import S3Service
+#here we have the instance of interview coach
+from app.services.ai import interview_coach
 import os
 
 
@@ -39,10 +43,7 @@ async def shutdown():
 # Middleware is a function that runs before every single request reaches actual code. for security purposes.Firewall Rule.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ],  # Allow both ports
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods (GET, POST, etc)
     allow_headers=["*"],  # Allows all headers
@@ -89,14 +90,14 @@ async def create_session(file: UploadFile = File(...),
     try:
         s3_url = s3_service.upload_file(fileContent=file_Content, fileName=file_name)
         if not s3_url:
-            print("⚠️ S3 Upload failed, but continuing flow.")
+            raise HTTPException(status_code=500, detail="Failed to upload resume to S3 Storage")
         user = await db.user.find_unique(where={'email': email})
         if not user:
             user = await db.user.create(
                 data={
                    "email": email,
-                   "FirstName": first_name,
-                   "LastName": last_name,
+                   "firstName": first_name,
+                   "lastName": last_name,
                    "clerkId": str(uuid.uuid4())
                 },
             )
@@ -112,7 +113,7 @@ async def create_session(file: UploadFile = File(...),
                 "resumeText": resume_text,
                 "resumeUrl":  s3_url,
                 "status": "SETUP",
-                "UserId": user.id
+                "userId": user.id
 
         })
         result = rag_service.process_file(tmp_file_path, newsession.id)
@@ -123,8 +124,79 @@ async def create_session(file: UploadFile = File(...),
 
     
     except Exception as e:
+        # 👇 ADD THESE LINES TO SEE THE ERROR IN THE TERMINAL
+        print("------------------------------------------------------------------")
+        print(f"🔥 CRITICAL ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc() 
+        print("------------------------------------------------------------------")
+        
+        # Keep this line so the frontend still gets a response
         raise HTTPException(status_code=500, detail=f"Critical Error: {str(e)}")
     finally:
         #cleanup
         if os.path.exists(tmp_file_path):
             os.remove(tmp_file_path)        
+@app.post("/chat/{session_id}", status_code=status.HTTP_201_CREATED)
+#BackgroundTasks special fat api feature that runs after the response
+async def chat_response(session_id: str, background_tasks: BackgroundTasks, user_message: str = Form(...)):
+    try:
+        session = await db.interviewsessions.find_unique(
+            where={"id": session_id},
+            include={"user": True}
+            )
+        if not session :
+            raise HTTPException(status_code=404, detail="Session not found")
+        await db.interviewmessage.create(
+            data={
+                "role" : "user",
+                "content" : user_message,
+                "sessionId": session_id
+            }
+        )
+        previous_messages = await db.interviewmessage.find_many(
+            where={"sessionId": session_id},
+            order={"createdAt": "asc"},
+            take=10
+        )
+        chat_history = []
+        for msg in previous_messages:
+            chat_history.append({"role": msg.role.lower(), "content": msg.content})
+
+        context_text = rag_service.search_resume(user_message, session_id)
+
+        ai_text = await interview_coach.generate_Response(resource_context=context_text, job_description=session.jobDescription,
+                                                        user_message=user_message,
+                                                        chat_history=chat_history,job_title= session.jobTitle)
+        await db.interviewmessage.create(
+            data = {
+            "role" : "assistant",
+            "content" : ai_text,
+            "sessionId": session_id
+            }
+        )
+        safe_header_text = quote(ai_text)
+        file_name = f"{uuid.uuid4()}.mp3"
+        audio_path = f"/tmp/{file_name}"
+        success = await interview_coach.tts_response(ai_text, audio_path)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to generate voice audio")
+        background_tasks.add_task(os.remove, audio_path)
+        return FileResponse(
+            audio_path,
+            media_type = "audio/mpeg",
+            filename= file_name,
+            headers={"X-AI-Response-Text": safe_header_text}
+
+        )
+    except Exception as e:
+            # 👇 ADD THESE LINES TO SEE THE ERROR IN THE TERMINAL
+            print("------------------------------------------------------------------")
+            print(f"🔥 CRITICAL ERROR: {str(e)}")
+            import traceback
+            traceback.print_exc() 
+            print("------------------------------------------------------------------")
+            
+            # Keep this line so the frontend still gets a response
+            raise HTTPException(status_code=500, detail=f"Critical Error: {str(e)}")
+

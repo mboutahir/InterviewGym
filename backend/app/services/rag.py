@@ -1,5 +1,5 @@
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import   HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 import os
@@ -48,7 +48,8 @@ class RAGService:
         for doc in result:
             text_part = doc.page_content
             client_text_list.append(text_part)
-        return client_text_list
+        final_context = "\n\n".join(client_text_list)
+        return final_context
 
 
 
