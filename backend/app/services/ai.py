@@ -4,7 +4,7 @@ from groq import Groq
 import json
 import edge_tts
 import random
-# 1. Load the secret key from .env
+
 load_dotenv()
 FALLBACK_QUESTIONS = [
     "I'm having a slight connection blip, but let's keep going. Could you tell me about a time you had to learn a new technology quickly?",
@@ -86,5 +86,85 @@ class InterviewCoach:
         except Exception as e:
             print(f"TTS Error: {e}")
             return False
+    async def generate_feedback(self, chat_history: list, job_description: str):
+        system_prompt = f"""
+        You are an expert Hiring Manager. You have just finished interviewing a candidate.
+        
+        JOB DESCRIPTION:
+        {job_description}
+        
+        TASK:
+        Review the conversation history below and generate a structured performance report.
+        
+        OUTPUT FORMAT (JSON ONLY):
+        Return a single JSON object with these exact keys:
+        {{
+            "score": (integer 0-10),
+            "feedback": (string, 2-3 sentences summary),
+            "strengths": (list of strings, top 3),
+            "improvements": (list of strings, top 3)
+        }}
+        """
+        conversations = ""
+        for msg in chat_history:
+            role = "Candidate" if msg["role"] == "user" else "interviewer"
+            conversations += f"{role}: {msg['content']}\n"
+        message = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Interview Transcript:\n\n{conversations}"}
+        ]
+        try:
+            response = await self.client.chat.completions.create(
+                messages=message,
+                model="llama-3.3-70b-versatile",
+                temperature= 0.5,
+                response_format={"type": "json_object"}
+            )
+            #turns it into a python dict
+            return json.loads(response.choices[0].message.content)
+
+        except Exception as e:
+            print(f"Feedback Error: {e}")
+            return {
+                "score": 0,
+                "feedback": "Error generating feedback.",
+                "strengths": [],
+                "improvements": []
+            }
+async def analyze_resume(self, jobDescription:str, resume: str):
+    system_prompt = f"""
+        You are an expert ATS (Applicant Tracking System) and Resume Coach.
+        
+        JOB DESCRIPTION:
+        {jobDescription}
+        
+        RESUME TEXT:
+        {resume}
+        
+        TASK:
+        Analyze how well this resume matches the job description.
+        
+        OUTPUT FORMAT (JSON ONLY):
+        {{
+            "score": (integer 0-100),
+            "feedback": (string, 2 sentences on main gaps),
+            "keywords_missing": (list of strings, important keywords found in JD but missing in Resume)
+        }}
+        """
+    message = [
+        {"role": "system", "content": system_prompt},
+    ]
+    try:
+        ai_response = await self.client.chat.compilations.create(
+                    messages=message,
+                    model="llama-3.3-70b-versatile",
+                    temperature= 0.3,
+                    response_format={"type": "json_object"}
+        )
+        return json.loads(ai_response.choices[0].message.content)
+    except Exception as e:
+            print(f"Resume Analysis Error: {e}")
+            return {"score": 0, "feedback": "Could not analyze.", "keywords_missing": []}
+
 interview_coach = InterviewCoach()
         

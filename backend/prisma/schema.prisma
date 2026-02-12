@@ -45,6 +45,8 @@ model InterviewSessions {
   user           User     @relation(fields: [userId], references: [id])
   createdAt      DateTime @default(now())
   Messages        InterviewMessage[]
+  resumeScore     Int?     
+  resumeFeedback  String?
 }
 model InterviewMessage {
   id            String    @id @default(uuid())

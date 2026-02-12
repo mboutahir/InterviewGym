@@ -200,3 +200,40 @@ async def chat_response(session_id: str, background_tasks: BackgroundTasks, user
             # Keep this line so the frontend still gets a response
             raise HTTPException(status_code=500, detail=f"Critical Error: {str(e)}")
 
+@app.post("/end_session/{session_id}", status_code=status.HTTP_201_CREATED)
+async def end_session(session_id: str):
+    #find specific session
+    session = await db.interviewsessions.find_unique(where={"id" : session_id})
+    #send debug error to frontend
+    if not session :
+            raise HTTPException(status_code=404, detail="Session not found")
+    #find many messages
+    message = await db.interviewmessage.find_many(where={"sessionId" : session_id}, order={"createdAt": "asc"})
+    history = []
+    for msg in message:
+        history.append({
+            "role": msg.role.lower(),
+            "content": msg.content
+        })
+    feedback = await interview_coach.generate_feedback(chat_history=history, job_description=session.jobDescription)
+    resume_feedback = await interview_coach.analyze_resume(jobDescription= session.jobDescription, resume= session.resumeText)
+
+    await db.interviewsessions.update(where={"id" : session_id},
+                                     data = {
+                                         "rating": feedback.get("score", 0),
+                                         "feedback": json.dumps(feedback),
+                                         "status": "COMPLETE",
+                                         "resumeScore": resume_feedback.get("score", 0),
+                                         "resumeFeedback": json.dumps(resume_feedback)
+                                            })
+    return {"status": "success", "data": {"interview_feedback": feedback,
+            "resume_analysis": resume_feedback}  }
+
+@app.get("/dashboard/{user_email}", status_code=status.HTTP_201_CREATED)
+async def get_dashboard(user_email:str):
+    user = await db.user.find_unique(where={"email":  user_email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    sessions = await db.interviewsessions.find_many(where={"userId":  user.id},
+                                                   order= {"createdAt": "desc" })
+    return sessions
