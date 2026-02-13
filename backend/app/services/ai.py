@@ -131,40 +131,40 @@ class InterviewCoach:
                 "strengths": [],
                 "improvements": []
             }
-async def analyze_resume(self, jobDescription:str, resume: str):
-    system_prompt = f"""
-        You are an expert ATS (Applicant Tracking System) and Resume Coach.
-        
-        JOB DESCRIPTION:
-        {jobDescription}
-        
-        RESUME TEXT:
-        {resume}
-        
-        TASK:
-        Analyze how well this resume matches the job description.
-        
-        OUTPUT FORMAT (JSON ONLY):
-        {{
-            "score": (integer 0-100),
-            "feedback": (string, 2 sentences on main gaps),
-            "keywords_missing": (list of strings, important keywords found in JD but missing in Resume)
-        }}
-        """
-    message = [
-        {"role": "system", "content": system_prompt},
-    ]
-    try:
-        ai_response = await self.client.chat.compilations.create(
-                    messages=message,
-                    model="llama-3.3-70b-versatile",
-                    temperature= 0.3,
-                    response_format={"type": "json_object"}
-        )
-        return json.loads(ai_response.choices[0].message.content)
-    except Exception as e:
-            print(f"Resume Analysis Error: {e}")
-            return {"score": 0, "feedback": "Could not analyze.", "keywords_missing": []}
+    async def analyze_resume(self, jobDescription:str, resume: str):
+        system_prompt = f"""
+            You are an expert ATS (Applicant Tracking System) and Resume Coach.
+            
+            JOB DESCRIPTION:
+            {jobDescription}
+            
+            RESUME TEXT:
+            {resume}
+            
+            TASK:
+            Analyze how well this resume matches the job description.
+            
+            OUTPUT FORMAT (JSON ONLY):
+            {{
+                "score": (integer 0-100),
+                "feedback": (string, 2 sentences on main gaps),
+                "keywords_missing": (list of strings, important keywords found in JD but missing in Resume)
+            }}
+            """
+        message = [
+            {"role": "system", "content": system_prompt},
+        ]
+        try:
+            ai_response = await self.client.chat.compilations.create(
+                        messages=message,
+                        model="llama-3.3-70b-versatile",
+                        temperature= 0.3,
+                        response_format={"type": "json_object"}
+            )
+            return json.loads(ai_response.choices[0].message.content)
+        except Exception as e:
+                print(f"Resume Analysis Error: {e}")
+                return {"score": 0, "feedback": "Could not analyze.", "keywords_missing": []}
 
 interview_coach = InterviewCoach()
         
