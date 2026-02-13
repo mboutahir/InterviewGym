@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import axios from "axios";
+import api from "@/lib/api"; // 👈 Import our new config
 import { useRouter } from "next/navigation";
 import { Upload, Briefcase, Sparkles, ArrowRight, Loader2, CheckCircle2, Zap, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
@@ -56,7 +57,9 @@ export default function Home() {
     data.append("email", user.primaryEmailAddress?.emailAddress || "");
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/create_session", data, {
+      const response = await api.post("/create_session", data, {
+        // You don't need to repeat 'headers' here unless you have specific ones,
+        // but keeping Content-Type is fine for file uploads!
         headers: { "Content-Type": "multipart/form-data" },
       });
       router.push(`/interview/${response.data.sessionId}`);
@@ -93,19 +96,19 @@ export default function Home() {
       color: '#e2e8f0',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
-<div style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 50, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        
+      <div style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 50, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+
         {/* 👇 NEW: Go To Dashboard Button */}
         {user && (
-            <Link href="/dashboard" style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                padding: '0.5rem 1rem', borderRadius: '12px',
-                color: 'white', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600,
-                transition: 'background 0.2s'
-            }}>
-                <LayoutDashboard size={18} /> Dashboard
-            </Link>
+          <Link href="/dashboard" style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '0.5rem 1rem', borderRadius: '12px',
+            color: 'white', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600,
+            transition: 'background 0.2s'
+          }}>
+            <LayoutDashboard size={18} /> Dashboard
+          </Link>
         )}
 
         <UserButton afterSignOutUrl="/" />
