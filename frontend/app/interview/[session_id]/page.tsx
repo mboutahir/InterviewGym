@@ -1,10 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation"; // 👈 Import useRouter
-import axios from "axios";
 import { Mic, Volume2, ArrowLeft, Loader2, StopCircle, CheckCircle, Flag } from "lucide-react";
 import Link from "next/link";
-import api from "@/lib/api";
 
 
 export default function InterviewPage() {
@@ -141,16 +139,17 @@ export default function InterviewPage() {
       const formData = new FormData();
       formData.append("user_message", text);
 
-      const response = await api.post(
-        `/chat/${sessionId}`,
-        formData,
-        { responseType: "blob" }
-      );
+      const response = await fetch(`http://127.0.0.1:8000/chat/${sessionId}`, {
+        method: "POST",
+        body: formData,
+      });
 
-      // Inside handleEndSession:
-      await api.post(`/end_session/${sessionId}`);
+      // End the session after chat
+      await fetch(`http://127.0.0.1:8000/end_session/${sessionId}`, {
+        method: "POST",
+      });
 
-      const encodedText = response.headers["x-ai-response-text"];
+      const encodedText = response.headers.get("x-ai-response-text");
       if (encodedText) {
         try {
           setAiResponse(decodeURIComponent(encodedText));
@@ -159,7 +158,7 @@ export default function InterviewPage() {
         }
       }
 
-      const audioBlob = new Blob([response.data], { type: "audio/mpeg" });
+      const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
       if (audioRef.current) {
@@ -194,7 +193,9 @@ export default function InterviewPage() {
 
     try {
       // Trigger the AI Analysis
-      await axios.post(`http://127.0.0.1:8000/end_session/${sessionId}`);
+      await fetch(`http://127.0.0.1:8000/end_session/${sessionId}`, {
+        method: "POST",
+      });
 
       // Go to Dashboard
       router.push('/dashboard');

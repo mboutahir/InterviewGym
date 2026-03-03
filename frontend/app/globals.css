@@ -25,3 +25,34 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #475569; 
 }
+.cl-internal-b3fm6y, 
+.cl-internal-1dauvpw, 
+.cl-userButtonPopoverFooter, 
+.cl-branding {
+  display: none !important;
+}
+
+/* Specifically for the "Head to dashboard" message container */
+div[data-clerk-component="UserButton"] footer,
+.cl-footerAction {
+  display: none !important;
+}
+/* Target by data attributes and structural location */
+[data-clerk-component="UserButton"] [role="dialog"] footer,
+[data-clerk-component="UserButton"] .cl-internal-b3fm6y,
+.cl-userButtonPopoverFooter,
+.cl-branding,
+.cl-internal-1dauvpw {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+}
+
+/* Hide the logo image specifically */
+img.cl-userButtonAvatarImage + div, 
+.cl-logoBox,
+.cl-logoImage {
+    display: none !important;
+}

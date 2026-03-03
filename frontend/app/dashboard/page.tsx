@@ -1,13 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useUser, UserButton } from "@clerk/nextjs";
 import {
     BarChart3, FileText, Calendar, Play, Briefcase, Zap,
     X, CheckCircle2, AlertTriangle, Search, Loader2
 } from "lucide-react";
 import Link from "next/link";
-import api from "@/lib/api";
 
 
 export default function Dashboard() {
@@ -20,155 +18,156 @@ export default function Dashboard() {
         if (isLoaded && user?.primaryEmailAddress?.emailAddress) {
             const fetchDashboard = async () => {
                 try {
-                    const res = await api.get(`/dashboard/${user.primaryEmailAddress?.emailAddress}`);
-                    setSessions(res.data);
+                    const response = await fetch(`http://127.0.0.1:8000/dashboard/${user.primaryEmailAddress?.emailAddress}`);
+                    const data = await response.json();
+                    setSessions(data);
                 } catch (err) {
                     console.error(err);
                 }
-             finally {
-                setLoading(false);
-            }
-        };
-        fetchDashboard();
-    }
-  }, [isLoaded, user]);
+                finally {
+                    setLoading(false);
+                }
+            };
+            fetchDashboard();
+        }
+    }, [isLoaded, user]);
 
-if (!isLoaded) return <div className="min-h-screen bg-black text-white p-10 flex items-center justify-center">Loading...</div>;
+    if (!isLoaded) return <div className="min-h-screen bg-black text-white p-10 flex items-center justify-center">Loading...</div>;
 
-return (
-    <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #000000 100%)',
-        padding: '3rem 1.5rem',
-        position: 'relative',
-        color: '#e2e8f0',
-        fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-        {/* User Button */}
-        <div style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 50 }}>
-            <UserButton afterSignOutUrl="/" />
-        </div>
-
-        <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
-
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: '4rem' }}>
-                <div>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.5rem 1rem', borderRadius: '50px', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <Zap style={{ width: '16px', height: '16px', color: '#fbbf24' }} />
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#f1f5f9' }}>YOUR PROGRESS</span>
-                    </div>
-                    <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
-                        Career <span style={{ color: 'transparent', backgroundClip: 'text', backgroundImage: 'linear-gradient(to right, #818cf8, #c084fc)' }}>Dashboard</span>
-                    </h1>
-                </div>
-
-                <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.1)', padding: '0.75rem 1.5rem', borderRadius: '12px', color: 'white', fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.2s' }}>
-                    <Briefcase size={18} /> New Interview
-                </Link>
+    return (
+        <div style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #000000 100%)',
+            padding: '3rem 1.5rem',
+            position: 'relative',
+            color: '#e2e8f0',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+            {/* User Button */}
+            <div style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 50 }}>
+                <UserButton afterSignOutUrl="/" />
             </div>
 
-            {/* Sessions Grid */}
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>Loading your stats...</div>
-            ) : sessions.length === 0 ? (
-                <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '24px', padding: '4rem', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <h3 style={{ fontSize: '1.5rem', color: 'white', marginBottom: '1rem' }}>No interviews yet</h3>
-                    <Link href="/" style={{ background: 'linear-gradient(135deg, #4f46e5, #9333ea)', padding: '1rem 2rem', borderRadius: '12px', color: 'white', fontWeight: 700, textDecoration: 'none' }}>Start Interview 🚀</Link>
+            <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
+
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: '4rem' }}>
+                    <div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(30, 41, 59, 0.6)', padding: '0.5rem 1rem', borderRadius: '50px', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <Zap style={{ width: '16px', height: '16px', color: '#fbbf24' }} />
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#f1f5f9' }}>YOUR PROGRESS</span>
+                        </div>
+                        <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', fontWeight: 800, color: '#ffffff', lineHeight: 1.1 }}>
+                            Career <span style={{ color: 'transparent', backgroundClip: 'text', backgroundImage: 'linear-gradient(to right, #818cf8, #c084fc)' }}>Dashboard</span>
+                        </h1>
+                    </div>
+
+                    <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.1)', padding: '0.75rem 1.5rem', borderRadius: '12px', color: 'white', fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)', transition: 'all 0.2s' }}>
+                        <Briefcase size={18} /> New Interview
+                    </Link>
                 </div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    {sessions.map((session) => {
-                        // 🛑 FIX: Check for both "COMPLETE" and "COMPLETED"
-                        const isCompleted = session.status === "COMPLETED" || session.status === "COMPLETE";
 
-                        let resumeScore = session.resumeScore || 0;
-                        let interviewScore = session.rating || 0;
+                {/* Sessions Grid */}
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>Loading your stats...</div>
+                ) : sessions.length === 0 ? (
+                    <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: '24px', padding: '4rem', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                        <h3 style={{ fontSize: '1.5rem', color: 'white', marginBottom: '1rem' }}>No interviews yet</h3>
+                        <Link href="/" style={{ background: 'linear-gradient(135deg, #4f46e5, #9333ea)', padding: '1rem 2rem', borderRadius: '12px', color: 'white', fontWeight: 700, textDecoration: 'none' }}>Start Interview 🚀</Link>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {sessions.map((session) => {
+                            // 🛑 FIX: Check for both "COMPLETE" and "COMPLETED"
+                            const isCompleted = session.status === "COMPLETED" || session.status === "COMPLETE";
 
-                        return (
-                            <div
-                                key={session.id}
-                                // 👇 MAKE CARD CLICKABLE IF COMPLETED
-                                onClick={() => isCompleted && setSelectedSession(session)}
-                                style={{
-                                    background: 'rgba(30, 41, 59, 0.4)', borderRadius: '24px', padding: '2rem',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)',
-                                    display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 150px', gap: '2rem', alignItems: 'center',
-                                    cursor: isCompleted ? 'pointer' : 'default',
-                                    transition: 'transform 0.2s, background 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (isCompleted) e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (isCompleted) e.currentTarget.style.background = 'rgba(30, 41, 59, 0.4)';
-                                }}
-                            >
-                                {/* 1. Info */}
-                                <div>
-                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>{session.jobTitle}</h3>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Calendar size={14} /> {new Date(session.createdAt).toLocaleDateString()}</span>
+                            let resumeScore = session.resumeScore || 0;
+                            let interviewScore = session.rating || 0;
+
+                            return (
+                                <div
+                                    key={session.id}
+                                    // 👇 MAKE CARD CLICKABLE IF COMPLETED
+                                    onClick={() => isCompleted && setSelectedSession(session)}
+                                    style={{
+                                        background: 'rgba(30, 41, 59, 0.4)', borderRadius: '24px', padding: '2rem',
+                                        border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)',
+                                        display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 150px', gap: '2rem', alignItems: 'center',
+                                        cursor: isCompleted ? 'pointer' : 'default',
+                                        transition: 'transform 0.2s, background 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (isCompleted) e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (isCompleted) e.currentTarget.style.background = 'rgba(30, 41, 59, 0.4)';
+                                    }}
+                                >
+                                    {/* 1. Info */}
+                                    <div>
+                                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>{session.jobTitle}</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Calendar size={14} /> {new Date(session.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Resume Score */}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: '5px' }}>RESUME</div>
+                                        {resumeScore > 0 ? (
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#38bdf8' }}>{resumeScore}%</div>
+                                        ) : (
+                                            <div style={{ fontSize: '0.9rem', color: '#64748b' }}>Pending...</div>
+                                        )}
+                                    </div>
+
+                                    {/* 3. Interview Score */}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: '5px' }}>INTERVIEW</div>
+                                        {interviewScore > 0 ? (
+                                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#c084fc' }}>{interviewScore}/10</div>
+                                        ) : (
+                                            <div style={{ fontSize: '0.9rem', color: '#64748b' }}>Pending...</div>
+                                        )}
+                                    </div>
+
+                                    {/* 4. Action Button */}
+                                    <div style={{ textAlign: 'right' }}>
+                                        {isCompleted ? (
+                                            <button
+                                                style={{
+                                                    background: 'rgba(255, 255, 255, 0.1)', color: 'white', border: 'none',
+                                                    padding: '0.75rem 1.5rem', borderRadius: '12px', cursor: 'pointer', fontWeight: 600,
+                                                    fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Search size={16} /> View Report
+                                            </button>
+                                        ) : (
+                                            <Link href={`/interview/${session.id}`} style={{
+                                                color: '#34d399', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none'
+                                            }}>
+                                                <Play size={16} /> Resume
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
-                                {/* 2. Resume Score */}
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: '5px' }}>RESUME</div>
-                                    {resumeScore > 0 ? (
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#38bdf8' }}>{resumeScore}%</div>
-                                    ) : (
-                                        <div style={{ fontSize: '0.9rem', color: '#64748b' }}>Pending...</div>
-                                    )}
-                                </div>
-
-                                {/* 3. Interview Score */}
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', marginBottom: '5px' }}>INTERVIEW</div>
-                                    {interviewScore > 0 ? (
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#c084fc' }}>{interviewScore}/10</div>
-                                    ) : (
-                                        <div style={{ fontSize: '0.9rem', color: '#64748b' }}>Pending...</div>
-                                    )}
-                                </div>
-
-                                {/* 4. Action Button */}
-                                <div style={{ textAlign: 'right' }}>
-                                    {isCompleted ? (
-                                        <button
-                                            style={{
-                                                background: 'rgba(255, 255, 255, 0.1)', color: 'white', border: 'none',
-                                                padding: '0.75rem 1.5rem', borderRadius: '12px', cursor: 'pointer', fontWeight: 600,
-                                                fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <Search size={16} /> View Report
-                                        </button>
-                                    ) : (
-                                        <Link href={`/interview/${session.id}`} style={{
-                                            color: '#34d399', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none'
-                                        }}>
-                                            <Play size={16} /> Resume
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+            {/* 🔹 REPORT MODAL (POPUP) */}
+            {selectedSession && (
+                <ReportModal
+                    session={selectedSession}
+                    onClose={() => setSelectedSession(null)}
+                />
             )}
+
         </div>
-
-        {/* 🔹 REPORT MODAL (POPUP) */}
-        {selectedSession && (
-            <ReportModal
-                session={selectedSession}
-                onClose={() => setSelectedSession(null)}
-            />
-        )}
-
-    </div>
-);
+    );
 }
 
 // 👇 SEPARATE COMPONENT FOR THE DETAILED REPORT

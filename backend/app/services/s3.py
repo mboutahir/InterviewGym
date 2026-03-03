@@ -54,10 +54,10 @@ class S3Service:
         print("⚠️ RUNNING IN NO-STORAGE MODE. Files will not be saved.")
         pass
 
-    def upload_file(self, file_content, file_name):
+    def upload_file(self, fileContent, fileName):
         # 1. Pretend to upload
-        print(f"Mocking upload for: {file_name}")
+        print(f"Mocking upload for: {fileName}")
         
         # 2. Return a fake URL
         # This prevents the database from crashing when it expects a string
-        return f"https://mock-storage.local/{file_name}"
+        return f"https://mock-storage.local/{fileName}"

@@ -1,7 +1,5 @@
 "use client";
 import { useState } from "react";
-import axios from "axios";
-import api from "@/lib/api"; // 👈 Import our new config
 import { useRouter } from "next/navigation";
 import { Upload, Briefcase, Sparkles, ArrowRight, Loader2, CheckCircle2, Zap, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
@@ -57,12 +55,12 @@ export default function Home() {
     data.append("email", user.primaryEmailAddress?.emailAddress || "");
 
     try {
-      const response = await api.post("/create_session", data, {
-        // You don't need to repeat 'headers' here unless you have specific ones,
-        // but keeping Content-Type is fine for file uploads!
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await fetch("http://127.0.0.1:8000/create_session", {
+        method: "POST",
+        body: data,
       });
-      router.push(`/interview/${response.data.sessionId}`);
+      const result = await response.json();
+      router.push(`/interview/${result.sessionId}`);
     } catch (error) {
       console.error(error);
       alert("Failed to start session. Is the backend running?");

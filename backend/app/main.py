@@ -43,7 +43,6 @@ async def shutdown():
 # Middleware is a function that runs before every single request reaches actual code. for security purposes.Firewall Rule.
 origins = [
     "http://localhost:3000",
-    "https://your-project-name.vercel.app", # <-- ADD YOUR VERCEL URL HERE
 ]
 
 app.add_middleware(
