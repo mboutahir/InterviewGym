@@ -11,17 +11,26 @@ FALLBACK_QUESTIONS = [
     "I missed the last part due to a glitch. Let's pivot slightly—what is your favorite project you've worked on recently?",
     "Apologies, I didn't quite catch that. Could you walk me through your problem-solving process for a difficult bug?",
     "My audio cut out for a second. Why don't we discuss your teamwork experience? Tell me about a time you disagreed with a coworker.",
-    "I'm having trouble processing that last answer. Let's move on. What are you looking for in your next role?"
+    "I'm having trouble processing that last answer. Let's move on. What are you looking for in your next role?",
 ]
+
 
 class InterviewCoach:
     def __init__(self):
-        self.api_key= os.getenv("GROQ_API_KEY")
+        self.api_key = os.getenv("GROQ_API_KEY")
         if not self.api_key:
             print("Error: GROQ_API_KEY not found. Check your .env file.")
             exit()
         self.client = Groq(api_key=self.api_key)
-    async def generate_Response(self, resource_context: str, job_description: str, user_message: str, chat_history, job_title:str):
+
+    async def generate_Response(
+        self,
+        resource_context: str,
+        job_description: str,
+        user_message: str,
+        chat_history,
+        job_title: str,
+    ):
         is_start = len(chat_history) == 0
 
         # 2. Dynamic Prompting
@@ -63,11 +72,9 @@ class InterviewCoach:
         try:
             chat_completion = self.client.chat.completions.create(
                 messages=[
-                    
-                        {"role": "system", "content": system_prompt},
-                        *chat_history,
-                        {"role": "user", "content": user_message},
-                    
+                    {"role": "system", "content": system_prompt},
+                    *chat_history,
+                    {"role": "user", "content": user_message},
                 ],
                 model="llama-3.3-70b-versatile",
                 temperature=0.7,
@@ -78,7 +85,8 @@ class InterviewCoach:
         except Exception as e:
             print(f"AI Error: {e}")
             return random.choice(FALLBACK_QUESTIONS)
-    async def tts_response(self, response_text:str, output_file:str):
+
+    async def tts_response(self, response_text: str, output_file: str):
         try:
             audio = edge_tts.Communicate(response_text, "en-US-AndrewNeural")
             await audio.save(output_file)
@@ -86,6 +94,7 @@ class InterviewCoach:
         except Exception as e:
             print(f"TTS Error: {e}")
             return False
+
     async def generate_feedback(self, chat_history: list, job_description: str):
         system_prompt = f"""
         You are an expert Hiring Manager. You have just finished interviewing a candidate.
@@ -111,16 +120,16 @@ class InterviewCoach:
             conversations += f"{role}: {msg['content']}\n"
         message = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Interview Transcript:\n\n{conversations}"}
+            {"role": "user", "content": f"Interview Transcript:\n\n{conversations}"},
         ]
         try:
             response = await self.client.chat.completions.create(
                 messages=message,
                 model="llama-3.3-70b-versatile",
-                temperature= 0.5,
-                response_format={"type": "json_object"}
+                temperature=0.5,
+                response_format={"type": "json_object"},
             )
-            #turns it into a python dict
+            # turns it into a python dict
             return json.loads(response.choices[0].message.content)
 
         except Exception as e:
@@ -129,9 +138,10 @@ class InterviewCoach:
                 "score": 0,
                 "feedback": "Error generating feedback.",
                 "strengths": [],
-                "improvements": []
+                "improvements": [],
             }
-    async def analyze_resume(self, jobDescription:str, resume: str):
+
+    async def analyze_resume(self, jobDescription: str, resume: str):
         system_prompt = f"""
             You are an expert ATS (Applicant Tracking System) and Resume Coach.
             
@@ -155,16 +165,20 @@ class InterviewCoach:
             {"role": "system", "content": system_prompt},
         ]
         try:
-            ai_response = await self.client.chat.compilations.create(
-                        messages=message,
-                        model="llama-3.3-70b-versatile",
-                        temperature= 0.3,
-                        response_format={"type": "json_object"}
+            ai_response = await self.client.chat.completions.create(
+                messages=message,
+                model="llama-3.3-70b-versatile",
+                temperature=0.3,
+                response_format={"type": "json_object"},
             )
             return json.loads(ai_response.choices[0].message.content)
         except Exception as e:
-                print(f"Resume Analysis Error: {e}")
-                return {"score": 0, "feedback": "Could not analyze.", "keywords_missing": []}
+            print(f"Resume Analysis Error: {e}")
+            return {
+                "score": 0,
+                "feedback": "Could not analyze.",
+                "keywords_missing": [],
+            }
+
 
 interview_coach = InterviewCoach()
-        
