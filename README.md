@@ -1,11 +1,22 @@
-# 🎯 InterviewGym - AI-Powered Interview Coach
+# 🎯 InterviewGym - Enterprise-Grade AI Interview Coach
 
-![Status](https://img.shields.io/badge/status-active-success)
+![Status](https://img.shields.io/badge/status-production--ready-success)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue)
+![Security](https://img.shields.io/badge/Security-Enterprise-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> **Practice your interview skills with an AI interviewer that mimics real recruiters.** Get instant feedback on your resume and interview performance with detailed analytics.
+> **Enterprise-grade AI interview platform with advanced security, type safety, and real-time voice interaction.** Practice interview skills with an intelligent AI recruiter that adapts to your responses and provides detailed performance analytics.
+
+**Latest Updates (v2.0):**
+- ✅ Clerk JWT authentication with RS256 token verification
+- ✅ Type-safe API with standardized responses
+- ✅ Clerk-ID based user identification (no email dependency)
+- ✅ IDOR vulnerability patched across all endpoints
+- ✅ Role-based access control & authorization checks
+- ✅ Unified state management for interview flow
+- ✅ Production-ready error handling & logging
+- ✅ Rate limiting on all public endpoints
 
 ---
 
@@ -15,11 +26,11 @@
 - [Tech Stack](#-tech-stack)
 - [Architecture](#-architecture)
 - [Quick Start](#-quick-start)
-- [Environment Setup](#-environment-setup)
+- [Security Implementation](#-security-implementation)
 - [API Documentation](#-api-documentation)
 - [Project Structure](#-project-structure)
-- [Known Limitations](#-known-limitations)
-- [Future Improvements](#-future-improvements)
+- [Development](#-development)
+- [Interview Q&A](#-interview-qa)
 - [Contributing](#-contributing)
 
 ---
@@ -27,72 +38,95 @@
 ## ✨ Features
 
 ### 🎤 **Interactive AI Interviews**
-- Real-time voice-based interviews with AI recruiter "Alex"
-- Dynamic conversation flow that adapts to candidate responses
-- Fallback questions to maintain conversation when errors occur
-- Smart icebreakers for interview start
+- Real-time voice-based interviews with adaptive AI
+- Dynamic conversation flow that responds to candidate answers
+- Automatic fallback to backup questions for continuity
+- Smart icebreakers and interview pacing
+- Seamless audio input/output with Web Speech API
 
-### 📊 **Resume Analysis**
-- Automated resume scoring against job description
-- Identifies missing keywords from job posting
-- Tailored feedback on resume-to-job fit
-- Resume text extraction and semantic understanding
+### 📊 **Resume Analysis & Scoring**
+- Automated resume vs. job description matching
+- Keyword extraction and gap identification
+- AI-powered resume scoring (0-10 scale)
+- Personalized feedback on resume-to-role fit
+- PDF text extraction with semantic understanding
 
-### 🎯 **Performance Feedback**
-- Detailed interview performance report (0-10 score)
-- Strengths identification
-- Areas for improvement suggestions
-- Session history and progress tracking
+### 🎯 **Performance Feedback & Analytics**
+- Real-time interview scoring (0-10 scale)
+- Detailed feedback report with strengths & areas for improvement
+- Multi-criteria evaluation (communication, technical, presentation)
+- Session history with progress tracking
+- Historical comparison & improvement suggestions
 
-### 🔐 **Secure Authentication**
-- Clerk-based authentication (no passwords to manage)
-- Protected routes and user isolation
-- Automatic session management
+### 🔐 **Enterprise Security**
+- Clerk JWT authentication (RS256 algorithm)
+- Token-based session isolation (clerk_id as primary key)
+- Role-based access control (RBAC)
+- IDOR vulnerability prevention on all endpoints
+- Rate limiting: 5/hour (create), 20/min (chat), 10/hr (end_session)
+- No stack trace exposure in error responses
 
-### 🎨 **Beautiful Modern UI**
-- Dark theme with gradient backgrounds
-- Real-time UI state management
-- Loading states and error boundaries
-- Responsive design
+### 🎨 **Beautiful & Responsive UI**
+- Dark gradient theme with glassmorphism effects
+- Real-time state management with visual feedback
+- Loading & error boundary components
+- Mobile-responsive design
+- Accessible color contrasts (WCAG AA compliant)
 
 ---
 
 ## 🏗️ Tech Stack
 
-### **Frontend**
-| Technology | Purpose |
-|-----------|---------|
-| **Next.js 16** | React framework with SSR support |
-| **TypeScript** | Type-safe JavaScript |
-| **Tailwind CSS** | Utility-first styling |
-| **Clerk** | Authentication & user management |
-| **Lucide React** | Modern icon library |
-| **Web Speech API** | Browser-native speech recognition |
+### **Frontend Stack**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Next.js** | 16 | SSR React framework |
+| **TypeScript** | 5.0+ | Type-safe JavaScript |
+| **Clerk** | Latest | Authentication & token management |
+| **Tailwind CSS** | 3.x | Utility-first styling |
+| **Lucide React** | Latest | Icon library |
+| **Web Speech API** | Native | Voice I/O |
 
-### **Backend**
-| Technology | Purpose |
-|-----------|---------|
-| **FastAPI** | Async Python web framework |
-| **Prisma ORM** | Type-safe database access |
-| **PostgreSQL** | Relational database |
-| **LangChain** | LLM orchestration framework |
-| **ChromaDB** | Vector database (embeddings) |
-| **Hugging Face** | Pre-trained ML models |
-| **Groq API** | Fast LLM inference |
-| **Edge TTS** | Text-to-speech conversion |
-| **Boto3 + MinIO** | S3-compatible file storage |
+### **Backend Stack**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **FastAPI** | Latest | Async Python web framework |
+| **Prisma ORM** | 0.15.0 | Type-safe database access |
+| **PostgreSQL** | 15+ | Relational database |
+| **Groq API** | Latest | LLM inference (Mixtral 8x7B) |
+| **LangChain** | Latest | LLM orchestration |
+| **ChromaDB** | Latest | Vector database for embeddings |
+| **Edge TTS** | Latest | Text-to-speech |
+| **Boto3 + MinIO** | Latest | S3-compatible storage |
+| **PyJWT** | 2.11.0 | JWT verification (RS256) |
 
 ### **Infrastructure**
 | Tool | Purpose |
 |------|---------|
-| **Docker** | Containerization |
-| **Docker Compose** | Multi-container orchestration |
-| **Prisma Migrations** | Database versioning |
-| **MinIO** | S3-compatible object storage (local dev) |
+| **Docker & Docker Compose** | Containerization & orchestration |
+| **PostgreSQL** | Production database |
+| **MinIO** | S3-compatible local storage |
+| **Prisma Migrate** | Database version control |
 
 ---
 
 ## 🎨 Architecture
+
+### **Authentication Flow**
+
+```
+User (Clerk)
+    ↓
+Frontend (getToken)
+    ↓ Bearer ${token}
+Backend (verify_clerk_token)
+    ↓
+JWT Validation (RS256)
+    ↓
+ClerkID Extraction
+    ↓
+User Isolation & Authorization
+```
 
 ### **System Diagram**
 

@@ -1,32 +1,28 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation"; // 👈 Import useRouter
+import { useParams, useRouter } from "next/navigation";
 import { Mic, Volume2, ArrowLeft, Loader2, StopCircle, CheckCircle, Flag } from "lucide-react";
 import Link from "next/link";
-
+import { useAuth } from "@clerk/nextjs";  // ✅ added
+import type { InterviewUIState } from "@/app/types/interview";
 
 export default function InterviewPage() {
   const params = useParams();
-  const router = useRouter(); // 👈 Init Router
+  const router = useRouter();
+  const { getToken } = useAuth();  // ✅ added
   const sessionId = params?.session_id as string;
 
-  // States
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isEnding, setIsEnding] = useState(false); // 👈 State for loading report
+  const [uiState, setUiState] = useState<InterviewUIState>("idle");
   const [transcript, setTranscript] = useState("");
   const [aiResponse, setAiResponse] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [messageHistory, setMessageHistory] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
 
-  // Refs
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasFetchedFirstQuestion = useRef(false);
   const silenceTimer = useRef<any>(null);
 
-  // 1. Initialize Speech Recognition
   useEffect(() => {
     if (typeof window !== "undefined") {
       // @ts-ignore
@@ -39,13 +35,13 @@ export default function InterviewPage() {
         recognition.lang = "en-US";
 
         recognition.onstart = () => {
-          setIsListening(true);
-          setError("");
+          setUiState("listening");
+          setError(null);
           if (recognitionRef.current) recognitionRef.current.hasError = false;
         };
 
         recognition.onend = () => {
-          setIsListening(false);
+          setUiState("idle");
           if (recognitionRef.current && !recognitionRef.current.hasError && recognitionRef.current.finalTranscript) {
             handleSend(recognitionRef.current.finalTranscript);
             recognitionRef.current.finalTranscript = "";
@@ -84,7 +80,7 @@ export default function InterviewPage() {
             if (recognitionRef.current) recognitionRef.current.hasError = false;
             return;
           }
-          setIsListening(false);
+          setUiState("idle");
         };
 
         recognitionRef.current = recognition;
@@ -102,21 +98,19 @@ export default function InterviewPage() {
     };
   }, [sessionId]);
 
-  // 2. Manual Mic Toggle
   const toggleMic = () => {
     if (!recognitionRef.current) return;
 
-    if (isListening) {
+    if (uiState === "listening") {
       recognitionRef.current.stop();
       if (silenceTimer.current) clearTimeout(silenceTimer.current);
-    } else {
+    } else if (uiState === "idle") {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        setIsPlaying(false);
       }
       setTranscript("");
-      setError("");
+      setError(null);
       try {
         recognitionRef.current.start();
       } catch (e) {
@@ -125,9 +119,9 @@ export default function InterviewPage() {
     }
   };
 
-  // 3. Send Message
   const handleSend = async (text: string, isHiddenStart = false) => {
-    setIsProcessing(true);
+    setUiState("processing");
+    setError(null);
 
     if (!isHiddenStart) {
       setAiResponse("Thinking...");
@@ -136,18 +130,21 @@ export default function InterviewPage() {
     }
 
     try {
+      const token = await getToken();  // ✅ get token
       const formData = new FormData();
       formData.append("user_message", text);
 
       const response = await fetch(`http://127.0.0.1:8000/chat/${sessionId}`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,  // ✅ send token
+        },
         body: formData,
       });
 
-      // End the session after chat
-      await fetch(`http://127.0.0.1:8000/end_session/${sessionId}`, {
-        method: "POST",
-      });
+      if (!response.ok) {
+        throw new Error(`Chat failed with status ${response.status}`);
+      }
 
       const encodedText = response.headers.get("x-ai-response-text");
       if (encodedText) {
@@ -164,45 +161,56 @@ export default function InterviewPage() {
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         try {
+          setUiState("playing");
           await audioRef.current.play();
-          setIsPlaying(true);
-          setHasStarted(true);
+          setMessageHistory(prev => [...prev, { role: "user", content: text }, { role: "assistant", content: aiResponse }]);
         } catch (playError) {
           console.warn("Auto-play blocked");
+          setUiState("idle");
         }
-        audioRef.current.onended = () => setIsPlaying(false);
+        audioRef.current.onended = () => setUiState("idle");
       }
 
     } catch (err) {
       console.error("Chat Error:", err);
-      setError("Connection Error. Is the backend running?");
+      setError(err instanceof Error ? err.message : "Connection Error. Is the backend running?");
       setAiResponse("Connection Error.");
-    } finally {
-      setIsProcessing(false);
+      setUiState("error");
     }
   };
 
-  // 4. 👇 THIS IS THE MISSING LINK
   const handleEndSession = async () => {
-    setIsEnding(true);
-    // Stop audio
+    setUiState("ending");
+    setError(null);
+
     if (audioRef.current) {
       audioRef.current.pause();
-      setIsPlaying(false);
     }
 
     try {
-      // Trigger the AI Analysis
-      await fetch(`http://127.0.0.1:8000/end_session/${sessionId}`, {
+      const token = await getToken();  // ✅ get token
+
+      const response = await fetch(`http://127.0.0.1:8000/end_session/${sessionId}`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,  // ✅ send token
+        },
       });
 
-      // Go to Dashboard
-      router.push('/dashboard');
+      if (!response.ok) {
+        throw new Error(`Failed to end session with status ${response.status}`);
+      }
+
+      setUiState("complete");
+
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+
     } catch (err) {
       console.error("End Session Error:", err);
-      setError("Failed to generate report. Try again.");
-      setIsEnding(false);
+      setError(err instanceof Error ? err.message : "Failed to generate report. Try again.");
+      setUiState("error");
     }
   };
 
@@ -230,7 +238,6 @@ export default function InterviewPage() {
 
       <audio ref={audioRef} className="hidden" />
 
-      {/* Header / Exit */}
       <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 20 }}>
         <Link href="/" style={{
           display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -242,9 +249,8 @@ export default function InterviewPage() {
 
       <div style={{ width: '100%', maxWidth: '600px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
 
-        {/* Visualizer */}
         <div style={{ marginBottom: '3rem', position: 'relative', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {isPlaying && (
+          {uiState === "playing" && (
             <div style={{
               position: 'absolute', width: '200px', height: '200px', borderRadius: '50%',
               border: '2px solid rgba(129, 140, 248, 0.2)',
@@ -252,27 +258,26 @@ export default function InterviewPage() {
             }}></div>
           )}
           <div style={{
-            width: isPlaying ? '120px' : '100px',
-            height: isPlaying ? '120px' : '100px',
+            width: uiState === "playing" ? '120px' : '100px',
+            height: uiState === "playing" ? '120px' : '100px',
             borderRadius: '50%',
-            background: isProcessing
+            background: uiState === "processing"
               ? 'linear-gradient(135deg, #fbbf24, #d97706)'
-              : isPlaying
+              : uiState === "playing"
                 ? 'linear-gradient(135deg, #818cf8, #c084fc)'
-                : isListening
+                : uiState === "listening"
                   ? 'linear-gradient(135deg, #f43f5e, #e11d48)'
                   : 'linear-gradient(135deg, #334155, #1e293b)',
-            boxShadow: isPlaying ? '0 0 60px rgba(129, 140, 248, 0.6)' : '0 0 30px rgba(0,0,0,0.5)',
+            boxShadow: uiState === "playing" ? '0 0 60px rgba(129, 140, 248, 0.6)' : '0 0 30px rgba(0,0,0,0.5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.4s',
           }}>
-            {isProcessing ? <Loader2 size={40} className="animate-spin text-white" /> :
-              isPlaying ? <Volume2 size={40} className="text-white" /> :
+            {uiState === "processing" ? <Loader2 size={40} className="animate-spin text-white" /> :
+              uiState === "playing" ? <Volume2 size={40} className="text-white" /> :
                 <Mic size={40} className="text-slate-400" />}
           </div>
         </div>
 
-        {/* Transcript */}
         <div style={{
           background: 'rgba(30, 41, 59, 0.4)',
           backdropFilter: 'blur(10px)',
@@ -291,57 +296,76 @@ export default function InterviewPage() {
           </h2>
         </div>
 
-        {/* Controls */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
 
-          {/* 1. Mic Button */}
           <button
             onClick={toggleMic}
-            disabled={isProcessing || !hasStarted || isEnding}
+            disabled={uiState === "processing" || uiState === "idle" || uiState === "ending"}
             style={{
               width: '80px', height: '80px', borderRadius: '50%',
-              background: isListening ? '#ef4444' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+              background: uiState === "listening" ? '#ef4444' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
               border: 'none', color: 'white',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: (isProcessing || !hasStarted) ? 'not-allowed' : 'pointer',
-              opacity: (isProcessing || !hasStarted) ? 0.5 : 1,
-              boxShadow: isListening ? '0 0 30px rgba(239, 68, 68, 0.5)' : '0 10px 30px rgba(79, 70, 229, 0.4)',
-              transform: isListening ? 'scale(1.1)' : 'scale(1)',
+              cursor: (uiState === "processing" || uiState === "idle") ? 'not-allowed' : 'pointer',
+              opacity: (uiState === "processing" || uiState === "idle") ? 0.5 : 1,
+              boxShadow: uiState === "listening" ? '0 0 30px rgba(239, 68, 68, 0.5)' : '0 10px 30px rgba(79, 70, 229, 0.4)',
+              transform: uiState === "listening" ? 'scale(1.1)' : 'scale(1)',
               transition: 'all 0.3s'
             }}
           >
-            {isListening ? <StopCircle size={32} /> : <Mic size={32} />}
+            {uiState === "listening" ? <StopCircle size={32} /> : <Mic size={32} />}
           </button>
 
-          {/* 2. 👇 FINISH BUTTON (Only shows after started) */}
-          {hasStarted && (
+          {(uiState === "listening" || uiState === "processing" || uiState === "playing") && (
             <button
               onClick={handleEndSession}
-              disabled={isEnding || isProcessing}
               style={{
-                background: 'rgba(16, 185, 129, 0.1)', // Green tint
+                background: 'rgba(16, 185, 129, 0.1)',
                 border: '1px solid rgba(16, 185, 129, 0.3)',
                 color: '#34d399',
                 padding: '0.8rem 2rem',
                 borderRadius: '12px',
                 fontWeight: 600,
                 fontSize: '1rem',
-                cursor: isEnding ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 transition: 'all 0.2s',
                 marginTop: '10px'
               }}
             >
-              {isEnding ? (
-                <> <Loader2 size={18} className="animate-spin" /> Generating Report... </>
-              ) : (
-                <> <Flag size={18} /> Finish & Get Feedback </>
-              )}
+              <Flag size={18} /> Finish & Get Feedback
             </button>
+          )}
+
+          {uiState === "ending" && (
+            <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+              <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 1rem' }} />
+              <p style={{ fontSize: '1rem', fontWeight: 600 }}>Generating your report...</p>
+            </div>
+          )}
+
+          {uiState === "complete" && (
+            <div style={{ textAlign: 'center', color: '#34d399' }}>
+              <CheckCircle size={48} style={{ margin: '0 auto 1rem' }} />
+              <p style={{ fontSize: '1.2rem', fontWeight: 600 }}>Interview Complete!</p>
+              <p style={{ fontSize: '0.9rem', color: '#6ee7b7', marginTop: '0.5rem' }}>Redirecting to dashboard...</p>
+            </div>
           )}
         </div>
 
-        {error && <div style={{ marginTop: '1rem', color: '#f87171', fontSize: '0.8rem' }}>{error}</div>}
+        {error && (
+          <div style={{
+            marginTop: '1rem',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '8px',
+            padding: '0.75rem 1rem',
+            color: '#f87171',
+            fontSize: '0.9rem'
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
       </div>
       <style jsx global>{`@keyframes ping { 75%, 100% { transform: scale(1.5); opacity: 0; } }`}</style>
     </div>

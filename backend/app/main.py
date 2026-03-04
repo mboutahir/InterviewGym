@@ -1,38 +1,83 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict
 from fastapi import HTTPException, status, File, UploadFile, Form, BackgroundTasks
-#Standard API responses return Text
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from app.exceptions import (
+    ValidationError,
+    NotFoundError,
+    ForbiddenError,
+    InternalServerError,
+)
 from app.utils import extract_pdf_toString
-from prisma import Prisma
-import json
-import uuid
-from urllib.parse import quote
+from app.models import (
+    CreateSessionRequest,
+    FileUploadRequest,
+    ApiResponse,
+    CreateSessionResponse,
+    EndSessionResponse,
+    DashboardSessionItem,
+)
 from app.services.rag import RAGService
 from app.services.s3 import S3Service
-#here we have the instance of interview coach
 from app.services.ai import interview_coach
+from app.logging_config import logger
+from app.auth import get_current_user
+from prisma import Prisma
+from datetime import datetime, timezone
+from typing import List
+import json
+import uuid
 import os
+from urllib.parse import quote
 
+limiter = Limiter(key_func=get_remote_address)
 
-# (main.py) is the Logic that Uvicorn calls when a packet arrives.
-# uvicorn is the web server that listens for incoming HTTP requests and forwards them to our FastAPI application.
+app = FastAPI(title="TalentAgent API")
+app.state.limiter = limiter
 
-app = FastAPI(
-    title="TalentAgent API"
-)  # create an instance of the fastapi class app is the webserver . When you run uvicorn app.main:app, uvicorn looks for this specific object to start listening on Port 8000.
-db = Prisma()  # Create an instance of the Prisma class to interact with the database.
+db = Prisma()
 rag_service = RAGService()
 s3_service = S3Service()
 
-# startup shutdown are built in
+
+def get_timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def error_response(e: HTTPException, message: str) -> ApiResponse:
+    return ApiResponse(
+        success=False,
+        statusCode=e.status_code,
+        message=message,
+        error=e.detail,
+        timestamp=get_timestamp(),
+    )
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    client_id = get_remote_address(request)
+    logger.warning(f"Rate limit exceeded by {client_id} on {request.url.path}")
+    return JSONResponse(
+        status_code=429,
+        content={
+            "success": False,
+            "statusCode": 429,
+            "message": "Too many requests",
+            "error": "Rate limit exceeded. Please try again later.",
+            "timestamp": get_timestamp(),
+        },
+    )
+
+
 @app.on_event("startup")
-# cosume on startup event
 async def startup():
-    print("attempting to connect to Postgres...")
+    logger.info("Attempting to connect to Postgres...")
     await db.connect()
-    print("Database Connected! ")
+    logger.info("Database connected!")
 
 
 @app.on_event("shutdown")
@@ -40,10 +85,7 @@ async def shutdown():
     await db.disconnect()
 
 
-# Middleware is a function that runs before every single request reaches actual code. for security purposes.Firewall Rule.
-origins = [
-    "http://localhost:3000",
-]
+origins = ["http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,190 +96,356 @@ app.add_middleware(
 )
 
 
-# If you see a GET request for /health, don't handle it yourself. Call this function instead.
-@app.get(
-    "/health", status_code=status.HTTP_200_OK
-)  # When a user sends a GET request to the URL /health, run the function below
-async def health_check():  # : is for starting the code block
+@app.get("/health", status_code=status.HTTP_200_OK)
+async def health_check():
     if db.is_connected():
-        return {"status": "healthy", "database": "connected "}
-    else:
-        return {"status": "unhealthy", "database": "disconnected "}
+        return {"status": "healthy", "database": "connected"}
+    return {"status": "unhealthy", "database": "disconnected"}
 
 
-@app.post("/create_session", status_code=status.HTTP_201_CREATED)
-# Variable Name: file
-# Type: UploadFile (A class that handles binary file uploads)
-# Translation: "I am creating a variable named file, and it will hold an object of type UploadFile."
-# = File(...) (The Instruction)
-# This is specific to FastAPI. In standard Python, the part after the = is usually a default value (like int x = 5). But here, it is an instruction to the web server:
-# "Don't expect this data to come from the URL (like ?id=5)."
-# "Don't expect it from a JSON body."
-# "LOOK for it in the 'Form Data' section of the HTTP packet."
-# ... is required :
-# ou might think ... is me being lazy. It is not! In FastAPI/Pydantic, the literal three dots Ellipsis mean "This field is absolutely required."
-# If you wrote = File(None), the file would be optional.
-# Writing = File(...) means: "If the user sends a request without a file, reject it immediately with a 422 Error."
-async def create_session(file: UploadFile = File(...), 
-                            jobDescription: str = Form(...),
-                            jobTitle: str = Form(...),
-                            first_name: str = Form(...),
-                            last_name: str = Form(...),
-                            email: str = Form(...)):
-    file_Content = await file.read()
+@app.post("/create_session", status_code=201)
+@limiter.limit("5/hour")
+async def create_session(
+    request: Request,
+    file: UploadFile = File(...),
+    jobDescription: str = Form(...),
+    jobTitle: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[CreateSessionResponse]:
+    tmp_file_path = None
+    clerk_id = current_user["user_id"]
+    first_name_arg = first_name
+    last_name_arg = last_name
 
-    file_ext = file.filename.split(".")[-1]
-    file_name = f"{uuid.uuid4()}.{file_ext}"
-    tmp_file_path = f"/tmp/{file_name}"
-    with open(tmp_file_path, 'wb') as buffer:
-        buffer.write(file_Content)
+    # ✅ Monitoring
+    client_id = get_remote_address(request)
+    logger.info(f"Create session request from {client_id} for user {clerk_id}")
+
     try:
-        s3_url = s3_service.upload_file(fileContent=file_Content, fileName=file_name)
+        FileUploadRequest(
+            filename=file.filename, file_size=file.size, content_type=file.content_type
+        )
+        CreateSessionRequest(
+            jobTitle=jobTitle,
+            jobDescription=jobDescription,
+            first_name=first_name,
+            last_name=last_name,
+            clerk_id=clerk_id,
+        )
+
+        file_content = await file.read()
+
+        if len(file_content) > FileUploadRequest.MAX_FILE_SIZE:
+            raise ValidationError(
+                f"File exceeds size limit of {FileUploadRequest.MAX_FILE_SIZE // (1024*1024)}MB"
+            )
+
+        file_ext = file.filename.split(".")[-1]
+        unique_filename = f"{uuid.uuid4()}.{file_ext}"
+        tmp_file_path = f"/tmp/{unique_filename}"
+
+        with open(tmp_file_path, "wb") as buffer:
+            buffer.write(file_content)
+
+        s3_url = s3_service.upload_file(
+            file_content=file_content, file_name=unique_filename
+        )
         if not s3_url:
-            raise HTTPException(status_code=500, detail="Failed to upload resume to S3 Storage")
-        user = await db.user.find_unique(where={'email': email})
+            raise InternalServerError()
+
+        user = await db.user.find_unique(where={"clerkId": clerk_id})
         if not user:
             user = await db.user.create(
                 data={
-                   "email": email,
-                   "firstName": first_name,
-                   "lastName": last_name,
-                   "clerkId": str(uuid.uuid4())
-                },
+                    "clerkId": clerk_id,
+                    "firstName": first_name_arg,
+                    "lastName": last_name_arg,
+                    "email": f"clerk_{clerk_id}@placeholder.local",
+                }
             )
-        resume_text = extract_pdf_toString(file_Content)
+
+        resume_text = extract_pdf_toString(file_content)
         if not resume_text:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to extract text from PDF",
+            raise ValidationError(
+                "Could not extract text from PDF. Ensure it's a valid PDF."
             )
-        newsession = await db.interviewsessions.create(data={
+
+        newsession = await db.interviewsessions.create(
+            data={
                 "jobTitle": jobTitle,
                 "jobDescription": jobDescription,
                 "resumeText": resume_text,
-                "resumeUrl":  s3_url,
+                "resumeUrl": s3_url,
                 "status": "SETUP",
-                "userId": user.id
-
-        })
-        result = rag_service.process_file(tmp_file_path, newsession.id)
-        return  {
-            "status": "success",
-            "sessionId": newsession.id
-        }
-
-    
-    except Exception as e:
-        # 👇 ADD THESE LINES TO SEE THE ERROR IN THE TERMINAL
-        print("------------------------------------------------------------------")
-        print(f"🔥 CRITICAL ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc() 
-        print("------------------------------------------------------------------")
-        
-        # Keep this line so the frontend still gets a response
-        raise HTTPException(status_code=500, detail=f"Critical Error: {str(e)}")
-    finally:
-        #cleanup
-        if os.path.exists(tmp_file_path):
-            os.remove(tmp_file_path)        
-@app.post("/chat/{session_id}", status_code=status.HTTP_201_CREATED)
-#BackgroundTasks special fat api feature that runs after the response
-async def chat_response(session_id: str, background_tasks: BackgroundTasks, user_message: str = Form(...)):
-    try:
-        session = await db.interviewsessions.find_unique(
-            where={"id": session_id},
-            include={"user": True}
-            )
-        if not session :
-            raise HTTPException(status_code=404, detail="Session not found")
-        await db.interviewmessage.create(
-            data={
-                "role" : "user",
-                "content" : user_message,
-                "sessionId": session_id
+                "userId": user.id,
             }
         )
-        previous_messages = await db.interviewmessage.find_many(
-            where={"sessionId": session_id},
-            order={"createdAt": "asc"},
-            take=10
+
+        rag_service.process_file(tmp_file_path, newsession.id)
+        logger.info(f"Session created: {newsession.id} for user {user.id}")
+
+        return ApiResponse(
+            success=True,
+            statusCode=201,
+            message="Session created successfully",
+            data=CreateSessionResponse(
+                sessionId=newsession.id,
+                jobTitle=newsession.jobTitle,
+                createdAt=newsession.createdAt.isoformat(),
+            ),
+            timestamp=get_timestamp(),
         )
-        chat_history = []
-        for msg in previous_messages:
-            chat_history.append({"role": msg.role.lower(), "content": msg.content})
+
+    except ValidationError as e:
+        logger.warning(f"Validation error in create_session: {e.detail}")
+        return error_response(e, "Validation error")
+
+    except InternalServerError as e:
+        logger.error(f"Internal error in create_session: {e.detail}", exc_info=True)
+        return error_response(e, "Internal server error")
+
+    except ValueError as e:
+        logger.warning(f"Pydantic validation error in create_session: {e}")
+        return ApiResponse(
+            success=False,
+            statusCode=422,
+            message="Validation error",
+            error=str(e),
+            timestamp=get_timestamp(),
+        )
+
+    except Exception as e:
+        logger.error(f"Unexpected error in create_session: {e}", exc_info=True)
+        return ApiResponse(
+            success=False,
+            statusCode=500,
+            message="Internal server error",
+            error="An unexpected error occurred",
+            timestamp=get_timestamp(),
+        )
+
+    finally:
+        if tmp_file_path and os.path.exists(tmp_file_path):
+            os.remove(tmp_file_path)
+
+
+@app.post("/chat/{session_id}", status_code=201)
+@limiter.limit("20/minute")
+async def chat_response(
+    request: Request,
+    session_id: str,
+    background_tasks: BackgroundTasks,
+    user_message: str = Form(...),
+    current_user: dict = Depends(get_current_user),
+):
+    # ✅ Monitoring
+    client_id = get_remote_address(request)
+    logger.info(f"Chat request from {client_id} for session {session_id}")
+
+    try:
+        session = await db.interviewsessions.find_unique(
+            where={"id": session_id}, include={"user": True}
+        )
+        if not session:
+            raise NotFoundError("Session not found")
+
+        if session.user.clerkId != current_user["user_id"]:
+            raise ForbiddenError("You do not have permission to access this session")
+
+        await db.interviewmessage.create(
+            data={"role": "user", "content": user_message, "sessionId": session_id}
+        )
+        previous_messages = await db.interviewmessage.find_many(
+            where={"sessionId": session_id}, order={"createdAt": "asc"}, take=10
+        )
+        chat_history = [
+            {"role": msg.role.lower(), "content": msg.content}
+            for msg in previous_messages
+        ]
 
         context_text = rag_service.search_resume(user_message, session_id)
 
-        ai_text = await interview_coach.generate_Response(resource_context=context_text, job_description=session.jobDescription,
-                                                        user_message=user_message,
-                                                        chat_history=chat_history,job_title= session.jobTitle)
-        await db.interviewmessage.create(
-            data = {
-            "role" : "assistant",
-            "content" : ai_text,
-            "sessionId": session_id
-            }
+        ai_text = await interview_coach.generate_Response(
+            resource_context=context_text,
+            job_description=session.jobDescription,
+            user_message=user_message,
+            chat_history=chat_history,
+            job_title=session.jobTitle,
         )
+        await db.interviewmessage.create(
+            data={"role": "assistant", "content": ai_text, "sessionId": session_id}
+        )
+
         safe_header_text = quote(ai_text)
         file_name = f"{uuid.uuid4()}.mp3"
         audio_path = f"/tmp/{file_name}"
+
         success = await interview_coach.tts_response(ai_text, audio_path)
         if not success:
-            raise HTTPException(status_code=500, detail="Failed to generate voice audio")
+            raise InternalServerError()
+
         background_tasks.add_task(os.remove, audio_path)
         return FileResponse(
             audio_path,
-            media_type = "audio/mpeg",
-            filename= file_name,
-            headers={"X-AI-Response-Text": safe_header_text}
-
+            media_type="audio/mpeg",
+            filename=file_name,
+            headers={"X-AI-Response-Text": safe_header_text},
         )
+
+    except HTTPException:
+        raise
+
     except Exception as e:
-            # 👇 ADD THESE LINES TO SEE THE ERROR IN THE TERMINAL
-            print("------------------------------------------------------------------")
-            print(f"🔥 CRITICAL ERROR: {str(e)}")
-            import traceback
-            traceback.print_exc() 
-            print("------------------------------------------------------------------")
-            
-            # Keep this line so the frontend still gets a response
-            raise HTTPException(status_code=500, detail=f"Critical Error: {str(e)}")
+        logger.error(f"Unexpected error in chat_response: {e}", exc_info=True)
+        raise InternalServerError()
 
-@app.post("/end_session/{session_id}", status_code=status.HTTP_201_CREATED)
-async def end_session(session_id: str):
-    #find specific session
-    session = await db.interviewsessions.find_unique(where={"id" : session_id})
-    #send debug error to frontend
-    if not session :
-            raise HTTPException(status_code=404, detail="Session not found")
-    #find many messages
-    message = await db.interviewmessage.find_many(where={"sessionId" : session_id}, order={"createdAt": "asc"})
-    history = []
-    for msg in message:
-        history.append({
-            "role": msg.role.lower(),
-            "content": msg.content
-        })
-    feedback = await interview_coach.generate_feedback(chat_history=history, job_description=session.jobDescription)
-    resume_feedback = await interview_coach.analyze_resume(jobDescription= session.jobDescription, resume= session.resumeText)
 
-    await db.interviewsessions.update(where={"id" : session_id},
-                                     data = {
-                                         "rating": feedback.get("score", 0),
-                                         "feedback": json.dumps(feedback),
-                                         "status": "COMPLETE",
-                                         "resumeScore": resume_feedback.get("score", 0),
-                                         "resumeFeedback": json.dumps(resume_feedback)
-                                            })
-    return {"status": "success", "data": {"interview_feedback": feedback,
-            "resume_analysis": resume_feedback}  }
+@app.post("/end_session/{session_id}", status_code=200)
+@limiter.limit("10/hour")
+async def end_session(
+    request: Request,
+    session_id: str,
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[EndSessionResponse]:
 
-@app.get("/dashboard/{user_email}", status_code=status.HTTP_201_CREATED)
-async def get_dashboard(user_email:str):
-    user = await db.user.find_unique(where={"email":  user_email})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    sessions = await db.interviewsessions.find_many(where={"userId":  user.id},
-                                                   order= {"createdAt": "desc" })
-    return sessions
+    # ✅ Monitoring
+    client_id = get_remote_address(request)
+    logger.info(f"End session request from {client_id} for session {session_id}")
+
+    try:
+        session = await db.interviewsessions.find_unique(
+            where={"id": session_id}, include={"user": True}
+        )
+        if not session:
+            raise NotFoundError("Session not found")
+
+        if session.user.clerkId != current_user["user_id"]:
+            raise ForbiddenError("You do not have permission to access this session")
+
+        messages = await db.interviewmessage.find_many(
+            where={"sessionId": session_id}, order={"createdAt": "asc"}
+        )
+        history = [
+            {"role": msg.role.lower(), "content": msg.content} for msg in messages
+        ]
+
+        feedback = await interview_coach.generate_feedback(
+            chat_history=history, job_description=session.jobDescription
+        )
+        resume_feedback = await interview_coach.analyze_resume(
+            jobDescription=session.jobDescription, resume=session.resumeText
+        )
+
+        await db.interviewsessions.update(
+            where={"id": session_id},
+            data={
+                "rating": feedback.get("score", 0),
+                "feedback": json.dumps(feedback),
+                "status": "COMPLETE",
+                "resumeScore": resume_feedback.get("score", 0),
+                "resumeFeedback": json.dumps(resume_feedback),
+            },
+        )
+
+        logger.info(
+            f"Session {session_id} completed for user {current_user['user_id']}"
+        )
+
+        return ApiResponse(
+            success=True,
+            statusCode=200,
+            message="Session ended and analysis complete",
+            data=EndSessionResponse(
+                interview_feedback=feedback,
+                resume_analysis=resume_feedback,
+            ),
+            timestamp=get_timestamp(),
+        )
+
+    except NotFoundError as e:
+        return error_response(e, "Not found")
+
+    except ForbiddenError as e:
+        return error_response(e, "Forbidden")
+
+    except InternalServerError as e:
+        logger.error(f"Internal error in end_session: {e.detail}", exc_info=True)
+        return error_response(e, "Internal server error")
+
+    except Exception as e:
+        logger.error(f"Unexpected error in end_session: {e}", exc_info=True)
+        return ApiResponse(
+            success=False,
+            statusCode=500,
+            message="Internal server error",
+            error="An unexpected error occurred",
+            timestamp=get_timestamp(),
+        )
+
+
+@app.get("/dashboard", status_code=200)
+@limiter.limit("30/minute")
+async def get_dashboard(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[List[DashboardSessionItem]]:
+
+    # ✅ Monitoring
+    client_id = get_remote_address(request)
+    logger.info(
+        f"Dashboard request from {client_id} for user {current_user['user_id']}"
+    )
+
+    try:
+        user_clerk_id = current_user["user_id"]
+        user = await db.user.find_unique(where={"clerkId": user_clerk_id})
+
+        if not user:
+            raise NotFoundError("User not found")
+
+        sessions = await db.interviewsessions.find_many(
+            where={"userId": user.id}, order={"createdAt": "desc"}
+        )
+
+        session_items = [
+            DashboardSessionItem(
+                id=s.id,
+                jobTitle=s.jobTitle,
+                status=s.status,
+                rating=s.rating or 0,
+                resumeScore=s.resumeScore or 0,
+                createdAt=s.createdAt.isoformat(),
+            )
+            for s in sessions
+        ]
+
+        logger.info(
+            f"Dashboard fetched for user {user.id}: {len(session_items)} sessions"
+        )
+
+        return ApiResponse(
+            success=True,
+            statusCode=200,
+            message=f"Retrieved {len(session_items)} sessions",
+            data=session_items,
+            timestamp=get_timestamp(),
+        )
+
+    except NotFoundError as e:
+        return error_response(e, "Not found")
+
+    except InternalServerError as e:
+        logger.error(f"Internal error in get_dashboard: {e.detail}", exc_info=True)
+        return error_response(e, "Internal server error")
+
+    except Exception as e:
+        logger.error(f"Unexpected error in get_dashboard: {e}", exc_info=True)
+        return ApiResponse(
+            success=False,
+            statusCode=500,
+            message="Internal server error",
+            error="An unexpected error occurred",
+            timestamp=get_timestamp(),
+        )

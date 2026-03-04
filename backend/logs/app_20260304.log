@@ -1,0 +1,357 @@
+2026-03-04 02:05:42,045 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 02:06:07,188 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 02:07:37,131 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 02:15:37,849 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 02:16:01,616 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 02:16:26,282 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 02:52:15,906 - interview_gym - ERROR - Unexpected error in create_session: `where.email`: A value is required but not set
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/main.py", line 142, in create_session
+    user = await db.user.find_unique(where={"email": email})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/actions.py", line 351, in find_unique
+    resp = await self._client._execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/_base_client.py", line 543, in _execute
+    return await self._engine.query(builder.build(), tx_id=self._tx_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_query.py", line 402, in query
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 233, in request
+    return self._process_response_data(data=data, response=response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 87, in _process_response_data
+    return utils.handle_response_errors(response, errors_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/utils.py", line 163, in handle_response_errors
+    raise prisma_errors.MissingRequiredValueError(error)
+prisma.errors.MissingRequiredValueError: `where.email`: A value is required but not set
+2026-03-04 02:54:55,879 - interview_gym - ERROR - Unexpected error in create_session: The table `public.User` does not exist in the current database.
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/main.py", line 158, in create_session
+    user = await db.user.find_unique(where={"clerkId": clerk_id})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/actions.py", line 351, in find_unique
+    resp = await self._client._execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/_base_client.py", line 543, in _execute
+    return await self._engine.query(builder.build(), tx_id=self._tx_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_query.py", line 402, in query
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 233, in request
+    return self._process_response_data(data=data, response=response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 87, in _process_response_data
+    return utils.handle_response_errors(response, errors_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/utils.py", line 175, in handle_response_errors
+    raise exc(error)
+prisma.errors.TableNotFoundError: The table `public.User` does not exist in the current database.
+2026-03-04 03:03:23,489 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 03:04:17,899 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 03:05:29,299 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 03:15:12,368 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 03:16:34,622 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 03:17:04,163 - interview_gym - ERROR - All upload attempts failed for 6a99f2e6-1700-415c-8cac-307238658621.pdf: Could not connect to the endpoint URL: "http://localhost:9000/resumes/6a99f2e6-1700-415c-8cac-307238658621.pdf"
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/httpsession.py", line 477, in send
+    urllib_response = conn.urlopen(
+                      ^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/retry.py", line 465, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/util.py", line 39, in reraise
+    raise value
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/awsrequest.py", line 96, in request
+    rval = super().request(method, url, body, headers, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 500, in request
+    self.endheaders()
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/http/client.py", line 1298, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/awsrequest.py", line 123, in _send_output
+    self.send(msg)
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/awsrequest.py", line 223, in send
+    return super().send(str)
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/http/client.py", line 996, in send
+    self.connect()
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: AWSHTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 61] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/services/s3.py", line 81, in upload_file
+    url = self._upload_with_retry(file_content, file_name)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/services/s3.py", line 67, in _upload_with_retry
+    self.s3_client.put_object(
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/client.py", line 1060, in _make_api_call
+    http, parsed_response = self._make_request(
+                            ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/client.py", line 1084, in _make_request
+    return self._endpoint.make_request(operation_model, request_dict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 119, in make_request
+    return self._send_request(request_dict, operation_model)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 200, in _send_request
+    while self._needs_retry(
+          ^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 360, in _needs_retry
+    responses = self._event_emitter.emit(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/hooks.py", line 412, in emit
+    return self._emitter.emit(aliased_event_name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/hooks.py", line 256, in emit
+    return self._emit(event_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/hooks.py", line 239, in _emit
+    response = handler(**kwargs)
+               ^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 207, in __call__
+    if self._checker(**checker_kwargs):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 284, in __call__
+    should_retry = self._should_retry(
+                   ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 320, in _should_retry
+    return self._checker(attempt_number, response, caught_exception)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 363, in __call__
+    checker_response = checker(
+                       ^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 247, in __call__
+    return self._check_caught_exception(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 416, in _check_caught_exception
+    raise caught_exception
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 279, in _do_get_response
+    http_response = self._send(request)
+                    ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 383, in _send
+    return self.http_session.send(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/httpsession.py", line 506, in send
+    raise EndpointConnectionError(endpoint_url=request.url, error=e)
+botocore.exceptions.EndpointConnectionError: Could not connect to the endpoint URL: "http://localhost:9000/resumes/6a99f2e6-1700-415c-8cac-307238658621.pdf"
+2026-03-04 03:17:04,199 - interview_gym - ERROR - Unexpected error in create_session: The table `public.User` does not exist in the current database.
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/main.py", line 158, in create_session
+    user = await db.user.find_unique(where={"clerkId": clerk_id})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/actions.py", line 351, in find_unique
+    resp = await self._client._execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/_base_client.py", line 543, in _execute
+    return await self._engine.query(builder.build(), tx_id=self._tx_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_query.py", line 402, in query
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 233, in request
+    return self._process_response_data(data=data, response=response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 87, in _process_response_data
+    return utils.handle_response_errors(response, errors_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/utils.py", line 175, in handle_response_errors
+    raise exc(error)
+prisma.errors.TableNotFoundError: The table `public.User` does not exist in the current database.
+2026-03-04 03:19:18,414 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 03:19:37,120 - interview_gym - ERROR - All upload attempts failed for 8d3221d5-f141-45e8-897d-a43cfedb765f.pdf: Could not connect to the endpoint URL: "http://localhost:9000/resumes/8d3221d5-f141-45e8-897d-a43cfedb765f.pdf"
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/httpsession.py", line 477, in send
+    urllib_response = conn.urlopen(
+                      ^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/retry.py", line 465, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/util/util.py", line 39, in reraise
+    raise value
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/awsrequest.py", line 96, in request
+    rval = super().request(method, url, body, headers, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 500, in request
+    self.endheaders()
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/http/client.py", line 1298, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/awsrequest.py", line 123, in _send_output
+    self.send(msg)
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/awsrequest.py", line 223, in send
+    return super().send(str)
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/http/client.py", line 996, in send
+    self.connect()
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/urllib3/connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: AWSHTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 61] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/services/s3.py", line 81, in upload_file
+    url = self._upload_with_retry(file_content, file_name)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/.local/share/uv/python/cpython-3.11.14-macos-aarch64-none/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/services/s3.py", line 67, in _upload_with_retry
+    self.s3_client.put_object(
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/client.py", line 602, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/client.py", line 1060, in _make_api_call
+    http, parsed_response = self._make_request(
+                            ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/client.py", line 1084, in _make_request
+    return self._endpoint.make_request(operation_model, request_dict)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 119, in make_request
+    return self._send_request(request_dict, operation_model)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 200, in _send_request
+    while self._needs_retry(
+          ^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 360, in _needs_retry
+    responses = self._event_emitter.emit(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/hooks.py", line 412, in emit
+    return self._emitter.emit(aliased_event_name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/hooks.py", line 256, in emit
+    return self._emit(event_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/hooks.py", line 239, in _emit
+    response = handler(**kwargs)
+               ^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 207, in __call__
+    if self._checker(**checker_kwargs):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 284, in __call__
+    should_retry = self._should_retry(
+                   ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 320, in _should_retry
+    return self._checker(attempt_number, response, caught_exception)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 363, in __call__
+    checker_response = checker(
+                       ^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 247, in __call__
+    return self._check_caught_exception(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/retryhandler.py", line 416, in _check_caught_exception
+    raise caught_exception
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 279, in _do_get_response
+    http_response = self._send(request)
+                    ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/endpoint.py", line 383, in _send
+    return self.http_session.send(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/httpsession.py", line 506, in send
+    raise EndpointConnectionError(endpoint_url=request.url, error=e)
+botocore.exceptions.EndpointConnectionError: Could not connect to the endpoint URL: "http://localhost:9000/resumes/8d3221d5-f141-45e8-897d-a43cfedb765f.pdf"

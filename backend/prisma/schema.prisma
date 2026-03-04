@@ -33,27 +33,28 @@ model User {
 }
 
 model InterviewSessions {
-  id             String   @id @default(uuid())
+  id             String             @id @default(uuid())
   jobTitle       String
-  jobDescription String   @db.Text
-  resumeText     String   @db.Text
+  jobDescription String             @db.Text
+  resumeText     String             @db.Text
   resumeUrl      String
-  status         String   @default("IN PROGRESS")
-  feedback       String?  @db.Text //big text
-  rating          Int?
+  status         String             @default("IN PROGRESS")
+  feedback       String?            @db.Text //big text
+  rating         Int?
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  createdAt      DateTime @default(now())
-  Messages        InterviewMessage[]
-  resumeScore     Int?     
-  resumeFeedback  String?
+  user           User               @relation(fields: [userId], references: [id])
+  createdAt      DateTime           @default(now())
+  Messages       InterviewMessage[]
+  resumeScore    Int?
+  resumeFeedback String?
 }
-model InterviewMessage {
-  id            String    @id @default(uuid())
-  role          String
-  content       String
-  createdAt     DateTime  @default(now())
 
-  sessionId     String
-  Session       InterviewSessions @relation(fields: [sessionId], references: [id])
+model InterviewMessage {
+  id        String   @id @default(uuid())
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  sessionId String
+  Session   InterviewSessions @relation(fields: [sessionId], references: [id])
 }

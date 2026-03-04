@@ -3,15 +3,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, Briefcase, Sparkles, ArrowRight, Loader2, CheckCircle2, Zap, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useUser, UserButton, useAuth } from "@clerk/nextjs";
+import { apiPostForm, ApiError } from "@/app/utils/api";
+import type { CreateSessionResponse } from "@/app/types/api";
 
 export default function Home() {
   const router = useRouter();
+  const { getToken } = useAuth(); // ✅ Get token from Clerk
 
   // 👇 2. Get User Data
   const { user, isLoaded } = useUser();
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [resume, setResume] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
@@ -55,15 +59,42 @@ export default function Home() {
     data.append("email", user.primaryEmailAddress?.emailAddress || "");
 
     try {
+      setError(null);
+
+      // ✅ Get JWT token from Clerk
+      const token = await getToken();
+      if (!token) {
+        setError("Failed to get authentication token. Please sign in again.");
+        return;
+      }
+
+      // ✅ Use new standardized API client with Authorization header
       const response = await fetch("http://127.0.0.1:8000/create_session", {
         method: "POST",
         body: data,
+        headers: {
+          "Authorization": `Bearer ${token}`, // ✅ Send JWT token
+        },
       });
+
       const result = await response.json();
-      router.push(`/interview/${result.sessionId}`);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to start session. Is the backend running?");
+
+      if (!result.success) {
+        throw new ApiError(
+          result.statusCode,
+          result.message || "Failed to start session",
+          result.error
+        );
+      }
+
+      router.push(`/interview/${result.data.sessionId}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(`Failed to start session (${err.statusCode}): ${err.message}`);
+      } else {
+        setError("Failed to start session. Is the backend running?");
+      }
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -169,6 +200,26 @@ export default function Home() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+          {/* ✅ Error Message Display */}
+          {error && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '16px',
+              padding: '1rem 1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              color: '#fca5a5'
+            }}>
+              <div style={{ fontSize: '1.25rem' }}>⚠️</div>
+              <div>
+                <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Error</p>
+                <p style={{ fontSize: '0.9rem', color: '#f87171' }}>{error}</p>
+              </div>
+            </div>
+          )}
 
           {/* ❌ REMOVED "Personal Info" Card (Clerk handles it) */}
 
