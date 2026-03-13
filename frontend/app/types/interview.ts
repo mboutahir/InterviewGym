@@ -1,23 +1,17 @@
-/**
- * Type definitions for Interview module
- * Single source of truth for data structures
- */
-
-// ========== API Response Types ==========
 
 export type SessionStatus = "SETUP" | "IN_PROGRESS" | "COMPLETE";
 
 export interface InterviewFeedback {
-    score: number;  // 0-10
-    feedback: string;  // Summary
-    strengths: string[];  // What they did well
-    improvements: string[];  // Areas to improve
+    score: number;
+    feedback: string;
+    strengths: string[];
+    improvements: string[];
 }
 
 export interface ResumeFeedback {
-    score: number;  // 0-100 (%)
-    feedback: string;  // Summary
-    keywords_missing: string[];  // Keywords from job description not in resume
+    score: number;
+    feedback: string;
+    keywords_missing: string[];
 }
 
 export interface InterviewSession {
@@ -28,12 +22,12 @@ export interface InterviewSession {
     resumeText: string;
     resumeUrl: string;
     status: SessionStatus;
-    rating: number;  // Interview score (0-10)
-    feedback: InterviewFeedback | string;  // Can be JSON string or parsed object
-    resumeScore: number;  // Resume match (0-100)
-    resumeFeedback: ResumeFeedback | string;  // Can be JSON string or parsed object
-    createdAt: string;  // ISO date string
-    updatedAt?: string;  // ISO date string (optional)
+    rating: number;
+    feedback: InterviewFeedback | string;
+    resumeScore: number;
+    resumeFeedback: ResumeFeedback | string;
+    createdAt: string;
+    updatedAt?: string;
 }
 
 export interface CreateSessionResponse {
@@ -46,8 +40,6 @@ export interface DashboardResponse {
     data: InterviewSession[];
     error?: string;
 }
-
-// ========== UI State Types ==========
 
 export type InterviewUIState =
     | "idle"
@@ -70,8 +62,6 @@ export interface InterviewPageState {
     }>;
 }
 
-// ========== Form Types ==========
-
 export interface CreateSessionFormData {
     jobTitle: string;
     jobDescription: string;
@@ -80,8 +70,6 @@ export interface CreateSessionFormData {
     email: string;
     resumeFile: File;
 }
-
-// ========== API Error Types ==========
 
 export interface ApiError {
     status: "error";

@@ -30,15 +30,15 @@ class S3Service:
             try:
                 self._ensure_bucket_exists()
                 self.is_available = True
-                logger.info("✅ S3/MinIO service initialized successfully")
+                logger.info("S3/MinIO service initialized successfully")
             except Exception as bucket_error:
                 # Bucket initialization failed but S3 client exists
-                logger.warning(f"⚠️ Could not verify bucket on startup: {bucket_error}")
+                logger.warning(f"Could not verify bucket on startup: {bucket_error}")
                 # Try to use S3 anyway - bucket may be created on first upload
                 self.is_available = True
 
         except Exception as e:
-            logger.error(f"❌ S3/MinIO service unavailable: {e}")
+            logger.error(f" S3/MinIO service unavailable: {e}")
             self.is_available = False
 
     def _ensure_bucket_exists(self):

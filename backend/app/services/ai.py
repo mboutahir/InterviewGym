@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from groq import Groq
+from groq import AsyncGroq
 import json
 import edge_tts
 import random
@@ -21,7 +21,7 @@ class InterviewCoach:
         if not self.api_key:
             print("Error: GROQ_API_KEY not found. Check your .env file.")
             exit()
-        self.client = Groq(api_key=self.api_key)
+        self.client = AsyncGroq(api_key=self.api_key)
 
     async def generate_Response(
         self,
@@ -31,11 +31,15 @@ class InterviewCoach:
         chat_history,
         job_title: str,
     ):
-        is_start = len(chat_history) == 0
+        # Check if this is the very first message (before user message is saved to DB)
+        # is_start = True only when chat_history is empty AND user message is the greeting
+        is_start = len(chat_history) == 0 or (
+            len(chat_history) == 1
+            and chat_history[0]["content"] == "Hello, I am ready."
+        )
 
         # 2. Dynamic Prompting
         if is_start:
-            # 🟢 MODE 1: THE WELCOME (Warm, Professional, Ice-Breaker)
             system_prompt = f"""
             You are Alex, a Senior Recruiter at a top tech company.
             You are starting an interview for the {job_title} position.
@@ -70,7 +74,7 @@ class InterviewCoach:
             - Do not repeat "I am an AI".
             """
         try:
-            chat_completion = self.client.chat.completions.create(
+            chat_completion = await self.client.chat.completions.create(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     *chat_history,
@@ -96,6 +100,8 @@ class InterviewCoach:
             return False
 
     async def generate_feedback(self, chat_history: list, job_description: str):
+        from app.logging_config import logger
+
         system_prompt = f"""
         You are an expert Hiring Manager. You have just finished interviewing a candidate.
         
@@ -123,6 +129,9 @@ class InterviewCoach:
             {"role": "user", "content": f"Interview Transcript:\n\n{conversations}"},
         ]
         try:
+            logger.info(
+                f"Generating feedback for interview with {len(chat_history)} messages"
+            )
             response = await self.client.chat.completions.create(
                 messages=message,
                 model="llama-3.3-70b-versatile",
@@ -130,10 +139,14 @@ class InterviewCoach:
                 response_format={"type": "json_object"},
             )
             # turns it into a python dict
-            return json.loads(response.choices[0].message.content)
+            feedback_data = json.loads(response.choices[0].message.content)
+            logger.info(
+                f"Feedback generated successfully: score={feedback_data.get('score')}"
+            )
+            return feedback_data
 
         except Exception as e:
-            print(f"Feedback Error: {e}")
+            logger.error(f"Error generating feedback: {e}", exc_info=True)
             return {
                 "score": 0,
                 "feedback": "Error generating feedback.",
@@ -142,6 +155,8 @@ class InterviewCoach:
             }
 
     async def analyze_resume(self, jobDescription: str, resume: str):
+        from app.logging_config import logger
+
         system_prompt = f"""
             You are an expert ATS (Applicant Tracking System) and Resume Coach.
             
@@ -165,15 +180,18 @@ class InterviewCoach:
             {"role": "system", "content": system_prompt},
         ]
         try:
+            logger.info("Analyzing resume against job description")
             ai_response = await self.client.chat.completions.create(
                 messages=message,
                 model="llama-3.3-70b-versatile",
                 temperature=0.3,
                 response_format={"type": "json_object"},
             )
-            return json.loads(ai_response.choices[0].message.content)
+            resume_data = json.loads(ai_response.choices[0].message.content)
+            logger.info(f"Resume analysis complete: score={resume_data.get('score')}")
+            return resume_data
         except Exception as e:
-            print(f"Resume Analysis Error: {e}")
+            logger.error(f"Error analyzing resume: {e}", exc_info=True)
             return {
                 "score": 0,
                 "feedback": "Could not analyze.",

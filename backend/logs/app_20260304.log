@@ -355,3 +355,14 @@ Traceback (most recent call last):
   File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/botocore/httpsession.py", line 506, in send
     raise EndpointConnectionError(endpoint_url=request.url, error=e)
 botocore.exceptions.EndpointConnectionError: Could not connect to the endpoint URL: "http://localhost:9000/resumes/8d3221d5-f141-45e8-897d-a43cfedb765f.pdf"
+2026-03-04 18:03:40,174 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 18:04:32,884 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 18:05:52,712 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 18:07:05,708 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 18:08:08,449 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 19:33:23,052 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 19:34:26,315 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 19:36:18,120 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 19:38:34,055 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 19:41:54,778 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"
+2026-03-04 19:43:21,879 - interview_gym - ERROR - Failed to ensure bucket exists: Could not connect to the endpoint URL: "http://localhost:9000/resumes"

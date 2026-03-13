@@ -1,4 +1,4 @@
-# 🎯 InterviewGym - Enterprise-Grade AI Interview Coach
+#  InterviewGym - Enterprise-Grade AI Interview Coach
 
 ![Status](https://img.shields.io/badge/status-production--ready-success)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
@@ -9,18 +9,18 @@
 > **Enterprise-grade AI interview platform with advanced security, type safety, and real-time voice interaction.** Practice interview skills with an intelligent AI recruiter that adapts to your responses and provides detailed performance analytics.
 
 **Latest Updates (v2.0):**
-- ✅ Clerk JWT authentication with RS256 token verification
-- ✅ Type-safe API with standardized responses
-- ✅ Clerk-ID based user identification (no email dependency)
-- ✅ IDOR vulnerability patched across all endpoints
-- ✅ Role-based access control & authorization checks
-- ✅ Unified state management for interview flow
-- ✅ Production-ready error handling & logging
-- ✅ Rate limiting on all public endpoints
+- Clerk JWT authentication with RS256 token verification
+- Type-safe API with standardized responses
+- Clerk-ID based user identification (no email dependency)
+- IDOR vulnerability patched across all endpoints
+- Role-based access control & authorization checks
+- Unified state management for interview flow
+- Production-ready error handling & logging
+- Rate limiting on all public endpoints
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
@@ -35,30 +35,30 @@
 
 ---
 
-## ✨ Features
+##  Features
 
-### 🎤 **Interactive AI Interviews**
+###  **Interactive AI Interviews**
 - Real-time voice-based interviews with adaptive AI
 - Dynamic conversation flow that responds to candidate answers
 - Automatic fallback to backup questions for continuity
 - Smart icebreakers and interview pacing
 - Seamless audio input/output with Web Speech API
 
-### 📊 **Resume Analysis & Scoring**
+###  **Resume Analysis & Scoring**
 - Automated resume vs. job description matching
 - Keyword extraction and gap identification
 - AI-powered resume scoring (0-10 scale)
 - Personalized feedback on resume-to-role fit
 - PDF text extraction with semantic understanding
 
-### 🎯 **Performance Feedback & Analytics**
+###  **Performance Feedback & Analytics**
 - Real-time interview scoring (0-10 scale)
 - Detailed feedback report with strengths & areas for improvement
 - Multi-criteria evaluation (communication, technical, presentation)
 - Session history with progress tracking
 - Historical comparison & improvement suggestions
 
-### 🔐 **Enterprise Security**
+###  **Enterprise Security**
 - Clerk JWT authentication (RS256 algorithm)
 - Token-based session isolation (clerk_id as primary key)
 - Role-based access control (RBAC)
@@ -66,7 +66,7 @@
 - Rate limiting: 5/hour (create), 20/min (chat), 10/hr (end_session)
 - No stack trace exposure in error responses
 
-### 🎨 **Beautiful & Responsive UI**
+###  **Beautiful & Responsive UI**
 - Dark gradient theme with glassmorphism effects
 - Real-time state management with visual feedback
 - Loading & error boundary components
@@ -75,7 +75,7 @@
 
 ---
 
-## 🏗️ Tech Stack
+##  Tech Stack
 
 ### **Frontend Stack**
 | Technology | Version | Purpose |
@@ -110,7 +110,7 @@
 
 ---
 
-## 🎨 Architecture
+##  Architecture
 
 ### **Authentication Flow**
 
@@ -198,11 +198,11 @@ User Isolation & Authorization
 This project uses **Boto3** (AWS SDK) with **MinIO** as the S3-compatible storage backend. Here's why this is a smart architectural decision:
 
 **Benefits:**
-- 🎯 **Drop-in AWS S3 Compatibility** - Uses standard S3 API via Boto3, so switching to AWS is just changing environment variables
-- 💰 **Cost-Efficient Development** - MinIO runs locally/in Docker, no AWS charges during development
-- 🚀 **Production-Ready** - Already using industry-standard AWS SDK, scales seamlessly to real S3
-- 📁 **File Persistence** - Actual file storage (not mocked), tests real S3 operations locally
-- 🔄 **Zero Migration Risk** - Code unchanged when deploying to AWS production
+-  **Drop-in AWS S3 Compatibility** - Uses standard S3 API via Boto3, so switching to AWS is just changing environment variables
+-  **Cost-Efficient Development** - MinIO runs locally/in Docker, no AWS charges during development
+-  **Production-Ready** - Already using industry-standard AWS SDK, scales seamlessly to real S3
+-  **File Persistence** - Actual file storage (not mocked), tests real S3 operations locally
+-  **Zero Migration Risk** - Code unchanged when deploying to AWS production
 
 **Environment Variables:**
 ```bash
@@ -214,7 +214,7 @@ AWS_BUCKET_NAME="resumes"
 AWS_ENDPOINT_URL="https://s3.amazonaws.com"
 ```
 
----## 🚀 Quick Start
+---##  Quick Start
 
 ### **Prerequisites**
 - Node.js 18+ and npm
@@ -302,7 +302,7 @@ Visit **http://localhost:3000** in your browser! 🎉
 
 ---
 
-## 📚 Environment Setup
+##  Environment Setup
 
 ### **Development** (Local)
 
@@ -333,7 +333,7 @@ docker-compose logs -f frontend
 
 ---
 
-## 📖 API Documentation
+##  API Documentation
 
 ### **Base URL**
 ```
@@ -430,7 +430,7 @@ GET /dashboard/{userEmail}
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 interview-gym/
@@ -471,7 +471,7 @@ interview-gym/
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 ### **Current (MVP Stage)**
 
@@ -484,10 +484,10 @@ interview-gym/
 7. **Mobile**: Not fully optimized for mobile devices
 
 ### **Security Note for Development**
-- ⚠️ GROQ_API_KEY is visible in `.env` file
-- ⚠️ Database credentials are hardcoded (dev only!)
-- ⚠️ No rate limiting on API endpoints
-- ⚠️ Input validation is minimal
+- GROQ_API_KEY is visible in `.env` file
+- Database credentials are hardcoded (dev only!)
+- No rate limiting on API endpoints
+- Input validation is minimal
 
 **These are acceptable for portfolio/demo but MUST be fixed before production!**
 
@@ -495,7 +495,7 @@ See `CODE_REVIEW.md` for detailed analysis and recommended fixes.
 
 ---
 
-## 🚀 Future Improvements
+##  Future Improvements
 
 ### **Short Term (v1.1)**
 - [x] ~~Implement real AWS S3 storage~~ - **Done with MinIO**
@@ -523,44 +523,32 @@ See `CODE_REVIEW.md` for detailed analysis and recommended fixes.
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please follow these steps:
 
 1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to branch** (`git push origin feature/amazing-feature`)
+2. **Create a feature branch** (`git checkout -b feature/feature`)
+3. **Commit changes** (`git commit -m 'Add  feature'`)
+4. **Push to branch** (`git push origin feature/feature`)
 5. **Open Pull Request**
 
-### **Code Style**
-- Python: PEP 8
-- TypeScript: ESLint config included
-- Commit messages: Conventional Commits
 
----
-
-## 📜 License
-
-This project is licensed under the **MIT License**.
-
----
-
-## 👨‍💻 Author
+##  Author
 
 **Mohammed Boutahir**
 - **GitHub**: [github.com/mboutahir](#)
-- **LinkedIn**: [linkedin.com/in/mboutahir](#)
+- **LinkedIn**: [https://www.linkedin.com/in/mohammed-boutahir-66b333281/](#)
 
 ---
 
-## 📝 Changelog
+##  Changelog
 
 ### **v1.0.0** (March 2026)
-- ✅ Initial release
-- ✅ Core interview functionality
-- ✅ Resume analysis
-- ✅ Dashboard with history
+- Initial release
+- Core interview functionality
+- Resume analysis
+- Dashboard with history
 
 ---
 

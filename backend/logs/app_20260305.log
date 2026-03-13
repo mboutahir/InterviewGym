@@ -1,0 +1,81 @@
+2026-03-05 17:26:44,548 - interview_gym - ERROR - Unexpected error in get_dashboard: The table `public.User` does not exist in the current database.
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/main.py", line 403, in get_dashboard
+    user = await db.user.find_unique(where={"clerkId": user_clerk_id})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/actions.py", line 351, in find_unique
+    resp = await self._client._execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/_base_client.py", line 543, in _execute
+    return await self._engine.query(builder.build(), tx_id=self._tx_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_query.py", line 402, in query
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 233, in request
+    return self._process_response_data(data=data, response=response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 87, in _process_response_data
+    return utils.handle_response_errors(response, errors_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/utils.py", line 175, in handle_response_errors
+    raise exc(error)
+prisma.errors.TableNotFoundError: The table `public.User` does not exist in the current database.
+2026-03-05 17:26:44,559 - interview_gym - ERROR - Unexpected error in get_dashboard: The table `public.User` does not exist in the current database.
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/main.py", line 403, in get_dashboard
+    user = await db.user.find_unique(where={"clerkId": user_clerk_id})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/actions.py", line 351, in find_unique
+    resp = await self._client._execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/_base_client.py", line 543, in _execute
+    return await self._engine.query(builder.build(), tx_id=self._tx_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_query.py", line 402, in query
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 233, in request
+    return self._process_response_data(data=data, response=response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 87, in _process_response_data
+    return utils.handle_response_errors(response, errors_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/utils.py", line 175, in handle_response_errors
+    raise exc(error)
+prisma.errors.TableNotFoundError: The table `public.User` does not exist in the current database.
+2026-03-05 17:27:03,874 - interview_gym - ERROR - Unexpected error in create_session: The table `public.User` does not exist in the current database.
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/main.py", line 158, in create_session
+    user = await db.user.find_unique(where={"clerkId": clerk_id})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/actions.py", line 351, in find_unique
+    resp = await self._client._execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/_base_client.py", line 543, in _execute
+    return await self._engine.query(builder.build(), tx_id=self._tx_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_query.py", line 402, in query
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 233, in request
+    return self._process_response_data(data=data, response=response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/_http.py", line 87, in _process_response_data
+    return utils.handle_response_errors(response, errors_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammedboutahir/Desktop/roro/backend/.venv/lib/python3.11/site-packages/prisma/engine/utils.py", line 175, in handle_response_errors
+    raise exc(error)
+prisma.errors.TableNotFoundError: The table `public.User` does not exist in the current database.
+2026-03-05 18:38:22,312 - interview_gym - ERROR - Error generating feedback: object ChatCompletion can't be used in 'await' expression
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/services/ai.py", line 135, in generate_feedback
+    response = await self.client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: object ChatCompletion can't be used in 'await' expression
+2026-03-05 18:38:22,948 - interview_gym - ERROR - Error analyzing resume: object ChatCompletion can't be used in 'await' expression
+Traceback (most recent call last):
+  File "/Users/mohammedboutahir/Desktop/roro/backend/app/services/ai.py", line 184, in analyze_resume
+    ai_response = await self.client.chat.completions.create(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: object ChatCompletion can't be used in 'await' expression

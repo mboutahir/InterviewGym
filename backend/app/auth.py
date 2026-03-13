@@ -9,7 +9,7 @@ security = HTTPBearer()
 
 CLERK_JWT_PUBLIC_KEY = os.getenv("CLERK_JWT_PUBLIC_KEY")
 
-# ✅ Validate that the key exists and is in PEM format
+# Validate that the key exists and is in PEM format
 if not CLERK_JWT_PUBLIC_KEY:
     logger.error("CLERK_JWT_PUBLIC_KEY environment variable is not set!")
     logger.error("Please add your Clerk public key to .env file")
@@ -45,7 +45,7 @@ async def verify_clerk_token(
     logger.info(f"RAW TOKEN PAYLOAD: {json.dumps(decoded, indent=2)}")
 
     try:
-        # ✅ Verify locally — no network call needed
+        # Verify locally — no network call needed
         payload = jwt.decode(
             token,
             CLERK_JWT_PUBLIC_KEY,

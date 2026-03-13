@@ -61,19 +61,19 @@ export default function Home() {
     try {
       setError(null);
 
-      // ✅ Get JWT token from Clerk
+      // Get JWT token from Clerk
       const token = await getToken();
       if (!token) {
         setError("Failed to get authentication token. Please sign in again.");
         return;
       }
 
-      // ✅ Use new standardized API client with Authorization header
+      // Use new standardized API client with Authorization header
       const response = await fetch("http://127.0.0.1:8000/create_session", {
         method: "POST",
         body: data,
         headers: {
-          "Authorization": `Bearer ${token}`, // ✅ Send JWT token
+          "Authorization": `Bearer ${token}`, // Send JWT token
         },
       });
 
@@ -201,7 +201,7 @@ export default function Home() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-          {/* ✅ Error Message Display */}
+          {/* Error Message Display */}
           {error && (
             <div style={{
               background: 'rgba(239, 68, 68, 0.1)',

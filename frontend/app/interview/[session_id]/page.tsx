@@ -3,13 +3,13 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Mic, Volume2, ArrowLeft, Loader2, StopCircle, CheckCircle, Flag } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";  // ✅ added
+import { useAuth } from "@clerk/nextjs";
 import type { InterviewUIState } from "@/app/types/interview";
 
 export default function InterviewPage() {
   const params = useParams();
   const router = useRouter();
-  const { getToken } = useAuth();  // ✅ added
+  const { getToken } = useAuth();
   const sessionId = params?.session_id as string;
 
   const [uiState, setUiState] = useState<InterviewUIState>("idle");
@@ -30,7 +30,7 @@ export default function InterviewPage() {
 
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;   
         recognition.interimResults = true;
         recognition.lang = "en-US";
 
@@ -42,7 +42,14 @@ export default function InterviewPage() {
 
         recognition.onend = () => {
           setUiState("idle");
-          if (recognitionRef.current && !recognitionRef.current.hasError && recognitionRef.current.finalTranscript) {
+          // Clear any pending silence timer
+          if (silenceTimer.current) clearTimeout(silenceTimer.current);
+          // Send whatever transcript we have accumulated
+          if (
+            recognitionRef.current &&
+            !recognitionRef.current.hasError &&
+            recognitionRef.current.finalTranscript
+          ) {
             handleSend(recognitionRef.current.finalTranscript);
             recognitionRef.current.finalTranscript = "";
           }
@@ -50,35 +57,43 @@ export default function InterviewPage() {
 
         recognition.onresult = (event: any) => {
           let currentTranscript = "";
-          for (let i = event.resultIndex; i < event.results.length; i++) {
+          for (let i = 0; i < event.results.length; i++) {
             currentTranscript += event.results[i][0].transcript;
           }
           setTranscript(currentTranscript);
 
+          // Always keep the latest full transcript saved
+          if (recognitionRef.current) {
+            recognitionRef.current.finalTranscript = currentTranscript;
+          }
+
+          // Reset silence timer on every new speech result
           if (silenceTimer.current) clearTimeout(silenceTimer.current);
           silenceTimer.current = setTimeout(() => {
-            if (currentTranscript.trim().length > 1) {
+            const wordCount = currentTranscript.trim().split(/\s+/).filter(w => w.length > 0).length;
+            if (wordCount >= 3) {
+              // Stop recognition — triggers onend → handleSend
               recognition.stop();
             }
-          }, 2500);
-
-          if (event.results[0].isFinal) {
-            if (recognitionRef.current) recognitionRef.current.finalTranscript = currentTranscript;
-          }
+          }, 3000); // 3 seconds of silence before submitting
         };
 
         recognition.onerror = (event: any) => {
           console.error("Speech Error:", event.error);
-          if (recognitionRef.current) recognitionRef.current.hasError = true;
           if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
-          if (event.error === 'network') {
-            setError("Network Error: Something is blocking Google Speech API (VPN? Antivirus?)");
-          } else if (event.error === 'not-allowed') {
-            setError("Microphone blocked. Check browser permissions.");
-          } else if (event.error === 'no-speech') {
+          if (event.error === "no-speech") {
+            // Not a real error — just ignore and keep state clean
             if (recognitionRef.current) recognitionRef.current.hasError = false;
             return;
+          }
+
+          if (recognitionRef.current) recognitionRef.current.hasError = true;
+
+          if (event.error === "network") {
+            setError("Network Error: Something is blocking Google Speech API (VPN? Antivirus?)");
+          } else if (event.error === "not-allowed") {
+            setError("Microphone blocked. Check browser permissions.");
           }
           setUiState("idle");
         };
@@ -102,8 +117,8 @@ export default function InterviewPage() {
     if (!recognitionRef.current) return;
 
     if (uiState === "listening") {
-      recognitionRef.current.stop();
       if (silenceTimer.current) clearTimeout(silenceTimer.current);
+      recognitionRef.current.stop(); // triggers onend → handleSend with whatever was said
     } else if (uiState === "idle") {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -111,6 +126,8 @@ export default function InterviewPage() {
       }
       setTranscript("");
       setError(null);
+      // Reset stored transcript before starting
+      if (recognitionRef.current) recognitionRef.current.finalTranscript = "";
       try {
         recognitionRef.current.start();
       } catch (e) {
@@ -130,14 +147,14 @@ export default function InterviewPage() {
     }
 
     try {
-      const token = await getToken();  // ✅ get token
+      const token = await getToken();
       const formData = new FormData();
       formData.append("user_message", text);
 
       const response = await fetch(`http://127.0.0.1:8000/chat/${sessionId}`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,  // ✅ send token
+          "Authorization": `Bearer ${token}`,
         },
         body: formData,
       });
@@ -146,7 +163,24 @@ export default function InterviewPage() {
         throw new Error(`Chat failed with status ${response.status}`);
       }
 
+      const contentType = response.headers.get("content-type");
+      const isJsonResponse = contentType?.includes("application/json");
+
+      if (isJsonResponse) {
+        const jsonData = await response.json();
+        if (jsonData.isSessionComplete) {
+          setAiResponse("Interview Complete! Generating your feedback...");
+          setUiState("complete");
+          setTimeout(() => {
+            router.push('/dashboard?refreshed=' + Date.now());
+          }, 2000);
+          return;
+        }
+      }
+
       const encodedText = response.headers.get("x-ai-response-text");
+      const isSessionComplete = response.headers.get("x-session-complete") === "true";
+
       if (encodedText) {
         try {
           setAiResponse(decodeURIComponent(encodedText));
@@ -168,7 +202,17 @@ export default function InterviewPage() {
           console.warn("Auto-play blocked");
           setUiState("idle");
         }
-        audioRef.current.onended = () => setUiState("idle");
+
+        if (isSessionComplete) {
+          audioRef.current.onended = () => {
+            setUiState("complete");
+            setTimeout(() => {
+              router.push('/dashboard?refreshed=' + Date.now());
+            }, 1500);
+          };
+        } else {
+          audioRef.current.onended = () => setUiState("idle");
+        }
       }
 
     } catch (err) {
@@ -188,12 +232,12 @@ export default function InterviewPage() {
     }
 
     try {
-      const token = await getToken();  // ✅ get token
+      const token = await getToken();
 
       const response = await fetch(`http://127.0.0.1:8000/end_session/${sessionId}`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,  // ✅ send token
+          "Authorization": `Bearer ${token}`,
         },
       });
 
@@ -204,7 +248,7 @@ export default function InterviewPage() {
       setUiState("complete");
 
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/dashboard?refreshed=' + Date.now());
       }, 2000);
 
     } catch (err) {
@@ -300,14 +344,14 @@ export default function InterviewPage() {
 
           <button
             onClick={toggleMic}
-            disabled={uiState === "processing" || uiState === "idle" || uiState === "ending"}
+            disabled={uiState === "processing" || uiState === "ending" || uiState === "complete"}
             style={{
               width: '80px', height: '80px', borderRadius: '50%',
               background: uiState === "listening" ? '#ef4444' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
               border: 'none', color: 'white',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: (uiState === "processing" || uiState === "idle") ? 'not-allowed' : 'pointer',
-              opacity: (uiState === "processing" || uiState === "idle") ? 0.5 : 1,
+              cursor: (uiState === "processing" || uiState === "ending" || uiState === "complete") ? 'not-allowed' : 'pointer',
+              opacity: (uiState === "processing" || uiState === "ending" || uiState === "complete") ? 0.5 : 1,
               boxShadow: uiState === "listening" ? '0 0 30px rgba(239, 68, 68, 0.5)' : '0 10px 30px rgba(79, 70, 229, 0.4)',
               transform: uiState === "listening" ? 'scale(1.1)' : 'scale(1)',
               transition: 'all 0.3s'
@@ -316,7 +360,7 @@ export default function InterviewPage() {
             {uiState === "listening" ? <StopCircle size={32} /> : <Mic size={32} />}
           </button>
 
-          {(uiState === "listening" || uiState === "processing" || uiState === "playing") && (
+          {(uiState === "idle" || uiState === "listening" || uiState === "processing" || uiState === "playing") && (
             <button
               onClick={handleEndSession}
               style={{
@@ -363,7 +407,7 @@ export default function InterviewPage() {
             color: '#f87171',
             fontSize: '0.9rem'
           }}>
-            ⚠️ {error}
+            {error}
           </div>
         )}
       </div>

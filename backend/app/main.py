@@ -119,7 +119,6 @@ async def create_session(
     first_name_arg = first_name
     last_name_arg = last_name
 
-    # ✅ Monitoring
     client_id = get_remote_address(request)
     logger.info(f"Create session request from {client_id} for user {clerk_id}")
 
@@ -240,7 +239,6 @@ async def chat_response(
     user_message: str = Form(...),
     current_user: dict = Depends(get_current_user),
 ):
-    # ✅ Monitoring
     client_id = get_remote_address(request)
     logger.info(f"Chat request from {client_id} for session {session_id}")
 
@@ -265,6 +263,75 @@ async def chat_response(
             for msg in previous_messages
         ]
 
+        ai_question_count = len(
+            [msg for msg in chat_history if msg["role"] == "assistant"]
+        )
+
+        # If we already have 6+ AI responses, auto-end without asking another question
+        if ai_question_count >= 6:
+            messages = await db.interviewmessage.find_many(
+                where={"sessionId": session_id}, order={"createdAt": "asc"}
+            )
+            history = [
+                {"role": msg.role.lower(), "content": msg.content} for msg in messages
+            ]
+
+            try:
+                feedback = await interview_coach.generate_feedback(
+                    chat_history=history, job_description=session.jobDescription
+                )
+                resume_feedback = await interview_coach.analyze_resume(
+                    jobDescription=session.jobDescription, resume=session.resumeText
+                )
+
+                if not feedback or not feedback.get("score"):
+                    feedback = {
+                        "score": 0,
+                        "feedback": "Interview completed but feedback generation failed.",
+                        "strengths": [],
+                        "improvements": [],
+                    }
+
+                if not resume_feedback or not resume_feedback.get("score"):
+                    resume_feedback = {
+                        "score": 0,
+                        "feedback": "Resume analysis failed.",
+                        "keywords_missing": [],
+                    }
+
+                await db.interviewsessions.update(
+                    where={"id": session_id},
+                    data={
+                        "rating": feedback.get("score", 0),
+                        "feedback": json.dumps(feedback),
+                        "status": "COMPLETE",
+                        "resumeScore": resume_feedback.get("score", 0),
+                        "resumeFeedback": json.dumps(resume_feedback),
+                    },
+                )
+            except Exception as feedback_err:
+                logger.error(
+                    f"Error generating feedback before question: {feedback_err}",
+                    exc_info=True,
+                )
+                await db.interviewsessions.update(
+                    where={"id": session_id},
+                    data={"status": "COMPLETE"},
+                )
+
+            logger.info(
+                f"Session {session_id} auto-completed for user {current_user['user_id']} after {ai_question_count} questions"
+            )
+
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": "Interview Complete!",
+                    "isSessionComplete": True,
+                },
+            )
+
         context_text = rag_service.search_resume(user_message, session_id)
 
         ai_text = await interview_coach.generate_Response(
@@ -278,6 +345,65 @@ async def chat_response(
             data={"role": "assistant", "content": ai_text, "sessionId": session_id}
         )
 
+        messages_after = await db.interviewmessage.find_many(
+            where={"sessionId": session_id}, order={"createdAt": "asc"}
+        )
+        history_after = [
+            {"role": msg.role.lower(), "content": msg.content} for msg in messages_after
+        ]
+        ai_count_after = len(
+            [msg for msg in history_after if msg["role"] == "assistant"]
+        )
+
+        # If this was our 6th question, generate feedback in background and mark complete
+        if ai_count_after >= 6:
+            try:
+                feedback = await interview_coach.generate_feedback(
+                    chat_history=history_after, job_description=session.jobDescription
+                )
+                resume_feedback = await interview_coach.analyze_resume(
+                    jobDescription=session.jobDescription, resume=session.resumeText
+                )
+
+                if not feedback or not feedback.get("score"):
+                    feedback = {
+                        "score": 0,
+                        "feedback": "Interview completed but feedback generation failed.",
+                        "strengths": [],
+                        "improvements": [],
+                    }
+
+                if not resume_feedback or not resume_feedback.get("score"):
+                    resume_feedback = {
+                        "score": 0,
+                        "feedback": "Resume analysis failed.",
+                        "keywords_missing": [],
+                    }
+
+                await db.interviewsessions.update(
+                    where={"id": session_id},
+                    data={
+                        "rating": feedback.get("score", 0),
+                        "feedback": json.dumps(feedback),
+                        "status": "COMPLETE",
+                        "resumeScore": resume_feedback.get("score", 0),
+                        "resumeFeedback": json.dumps(resume_feedback),
+                    },
+                )
+
+                logger.info(
+                    f"Session {session_id} auto-completed after question {ai_count_after}"
+                )
+            except Exception as feedback_err:
+                logger.error(
+                    f"Error generating feedback for session {session_id}: {feedback_err}",
+                    exc_info=True,
+                )
+                await db.interviewsessions.update(
+                    where={"id": session_id},
+                    data={"status": "COMPLETE"},
+                )
+
         safe_header_text = quote(ai_text)
         file_name = f"{uuid.uuid4()}.mp3"
         audio_path = f"/tmp/{file_name}"
@@ -287,11 +413,16 @@ async def chat_response(
             raise InternalServerError()
 
         background_tasks.add_task(os.remove, audio_path)
+
+        response_headers = {"X-AI-Response-Text": safe_header_text}
+        if ai_count_after >= 6:
+            response_headers["X-Session-Complete"] = "true"
+
         return FileResponse(
             audio_path,
             media_type="audio/mpeg",
             filename=file_name,
-            headers={"X-AI-Response-Text": safe_header_text},
+            headers=response_headers,
         )
 
     except HTTPException:
@@ -310,7 +441,6 @@ async def end_session(
     current_user: dict = Depends(get_current_user),
 ) -> ApiResponse[EndSessionResponse]:
 
-    # ✅ Monitoring
     client_id = get_remote_address(request)
     logger.info(f"End session request from {client_id} for session {session_id}")
 
@@ -338,6 +468,23 @@ async def end_session(
             jobDescription=session.jobDescription, resume=session.resumeText
         )
 
+        if not feedback or not feedback.get("score"):
+            logger.warning(f"Empty feedback for session {session_id}, using defaults")
+            feedback = {
+                "score": 0,
+                "feedback": "Interview completed but feedback generation failed.",
+                "strengths": [],
+                "improvements": [],
+            }
+
+        if not resume_feedback or not resume_feedback.get("score"):
+            logger.warning(f"Empty resume feedback for session {session_id}, using defaults")
+            resume_feedback = {
+                "score": 0,
+                "feedback": "Resume analysis failed.",
+                "keywords_missing": [],
+            }
+
         await db.interviewsessions.update(
             where={"id": session_id},
             data={
@@ -349,9 +496,7 @@ async def end_session(
             },
         )
 
-        logger.info(
-            f"Session {session_id} completed for user {current_user['user_id']}"
-        )
+        logger.info(f"Session {session_id} completed for user {current_user['user_id']}")
 
         return ApiResponse(
             success=True,
@@ -392,18 +537,22 @@ async def get_dashboard(
     current_user: dict = Depends(get_current_user),
 ) -> ApiResponse[List[DashboardSessionItem]]:
 
-    # ✅ Monitoring
     client_id = get_remote_address(request)
-    logger.info(
-        f"Dashboard request from {client_id} for user {current_user['user_id']}"
-    )
+    logger.info(f"Dashboard request from {client_id} for user {current_user['user_id']}")
 
     try:
         user_clerk_id = current_user["user_id"]
         user = await db.user.find_unique(where={"clerkId": user_clerk_id})
 
+        # Return empty list instead of 404 if user doesn't exist yet
         if not user:
-            raise NotFoundError("User not found")
+            return ApiResponse(
+                success=True,
+                statusCode=200,
+                message="No sessions found",
+                data=[],
+                timestamp=get_timestamp(),
+            )
 
         sessions = await db.interviewsessions.find_many(
             where={"userId": user.id}, order={"createdAt": "desc"}
@@ -412,18 +561,22 @@ async def get_dashboard(
         session_items = [
             DashboardSessionItem(
                 id=s.id,
+                userId=s.userId,
                 jobTitle=s.jobTitle,
+                jobDescription=s.jobDescription,
+                resumeText=s.resumeText,
+                resumeUrl=s.resumeUrl,
                 status=s.status,
                 rating=s.rating or 0,
                 resumeScore=s.resumeScore or 0,
                 createdAt=s.createdAt.isoformat(),
+                feedback=s.feedback,             # ← now included
+                resumeFeedback=s.resumeFeedback, # ← now included
             )
             for s in sessions
         ]
 
-        logger.info(
-            f"Dashboard fetched for user {user.id}: {len(session_items)} sessions"
-        )
+        logger.info(f"Dashboard fetched for user {user.id}: {len(session_items)} sessions")
 
         return ApiResponse(
             success=True,
@@ -432,9 +585,6 @@ async def get_dashboard(
             data=session_items,
             timestamp=get_timestamp(),
         )
-
-    except NotFoundError as e:
-        return error_response(e, "Not found")
 
     except InternalServerError as e:
         logger.error(f"Internal error in get_dashboard: {e.detail}", exc_info=True)

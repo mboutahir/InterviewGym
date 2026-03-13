@@ -15,18 +15,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/app:/code/app
-    depends_on:
-      - db
-    env_file:
-      - ./backend/.env
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - ./backend/app:/code/app
+  #   depends_on:
+  #     - db
+  #   env_file:
+  #     - ./backend/.env
   minio:
       image: minio/minio:latest
       environment:
