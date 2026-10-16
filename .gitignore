@@ -3,3 +3,7 @@ __pycache__/
 .env
 .venv
 .DS_Store
+
+# Runtime data
+backend/chroma_db/
+backend/logs/

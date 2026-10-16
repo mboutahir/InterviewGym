@@ -85,7 +85,7 @@ async def shutdown():
     await db.disconnect()
 
 
-origins = ["http://localhost:3000"]
+origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -93,6 +93,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Custom response headers are hidden from browser JS unless explicitly exposed
+    expose_headers=["X-AI-Response-Text", "X-Session-Complete"],
 )
 
 
@@ -111,7 +113,7 @@ async def create_session(
     jobDescription: str = Form(...),
     jobTitle: str = Form(...),
     first_name: str = Form(...),
-    last_name: str = Form(...),
+    last_name: str = Form(""),  # empty form fields count as "missing", so default it
     current_user: dict = Depends(get_current_user),
 ) -> ApiResponse[CreateSessionResponse]:
     tmp_file_path = None
@@ -252,19 +254,21 @@ async def chat_response(
         if session.user.clerkId != current_user["user_id"]:
             raise ForbiddenError("You do not have permission to access this session")
 
-        await db.interviewmessage.create(
-            data={"role": "user", "content": user_message, "sessionId": session_id}
-        )
+        # Last 10 messages BEFORE saving the new one (the new one is passed separately to the LLM)
         previous_messages = await db.interviewmessage.find_many(
-            where={"sessionId": session_id}, order={"createdAt": "asc"}, take=10
+            where={"sessionId": session_id}, order={"createdAt": "desc"}, take=10
         )
         chat_history = [
             {"role": msg.role.lower(), "content": msg.content}
-            for msg in previous_messages
+            for msg in reversed(previous_messages)
         ]
 
-        ai_question_count = len(
-            [msg for msg in chat_history if msg["role"] == "assistant"]
+        await db.interviewmessage.create(
+            data={"role": "user", "content": user_message, "sessionId": session_id}
+        )
+
+        ai_question_count = await db.interviewmessage.count(
+            where={"sessionId": session_id, "role": "assistant"}
         )
 
         # If we already have 6+ AI responses, auto-end without asking another question

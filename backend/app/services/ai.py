@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from groq import AsyncGroq
+from openai import AsyncOpenAI
 import json
 import edge_tts
 import random
@@ -15,13 +15,38 @@ FALLBACK_QUESTIONS = [
 ]
 
 
+# Groq and Ollama both expose an OpenAI-compatible API, so one client works for both.
+# Pick with LLM_PROVIDER in .env; LLM_MODEL overrides the default model.
+LLM_PROVIDERS = {
+    "groq": {
+        "base_url": "https://api.groq.com/openai/v1",
+        "api_key_env": "GROQ_API_KEY",
+        "model": "llama-3.3-70b-versatile",
+    },
+    "ollama": {
+        "base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+        "api_key_env": None,  # local server, no key needed
+        "model": "qwen2.5:3b",
+    },
+}
+
+
 class InterviewCoach:
     def __init__(self):
-        self.api_key = os.getenv("GROQ_API_KEY")
-        if not self.api_key:
-            print("Error: GROQ_API_KEY not found. Check your .env file.")
-            exit()
-        self.client = AsyncGroq(api_key=self.api_key)
+        provider = os.getenv("LLM_PROVIDER", "groq").lower()
+        if provider not in LLM_PROVIDERS:
+            raise ValueError(f"Unknown LLM_PROVIDER '{provider}'. Use one of: {list(LLM_PROVIDERS)}")
+        config = LLM_PROVIDERS[provider]
+
+        api_key = "ollama"  # the OpenAI client requires a non-empty key
+        if config["api_key_env"]:
+            api_key = os.getenv(config["api_key_env"])
+            if not api_key:
+                raise ValueError(f"{config['api_key_env']} not found. Check your .env file.")
+
+        self.model = os.getenv("LLM_MODEL", config["model"])
+        self.client = AsyncOpenAI(base_url=config["base_url"], api_key=api_key)
+        print(f"LLM provider: {provider} ({self.model})")
 
     async def generate_Response(
         self,
@@ -80,7 +105,7 @@ class InterviewCoach:
                     *chat_history,
                     {"role": "user", "content": user_message},
                 ],
-                model="llama-3.3-70b-versatile",
+                model=self.model,
                 temperature=0.7,
                 max_tokens=256,
             )
@@ -134,7 +159,7 @@ class InterviewCoach:
             )
             response = await self.client.chat.completions.create(
                 messages=message,
-                model="llama-3.3-70b-versatile",
+                model=self.model,
                 temperature=0.5,
                 response_format={"type": "json_object"},
             )
@@ -183,7 +208,7 @@ class InterviewCoach:
             logger.info("Analyzing resume against job description")
             ai_response = await self.client.chat.completions.create(
                 messages=message,
-                model="llama-3.3-70b-versatile",
+                model=self.model,
                 temperature=0.3,
                 response_format={"type": "json_object"},
             )

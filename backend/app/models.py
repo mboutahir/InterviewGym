@@ -25,9 +25,10 @@ class CreateSessionRequest(BaseModel):
         Field(min_length=1, max_length=50, description="First name (1-50 characters)"),
     ]
 
+    # Clerk users can sign up without a last name, so the frontend may send ""
     last_name: Annotated[
         str,
-        Field(min_length=1, max_length=50, description="Last name (1-50 characters)"),
+        Field(max_length=50, description="Last name (0-50 characters)"),
     ]
 
     clerk_id: str
@@ -43,7 +44,7 @@ class CreateSessionRequest(BaseModel):
     @field_validator("first_name", "last_name")
     @classmethod
     def alpha_only(cls, v):
-        if not re.match(r"^[a-zA-Z\s\-']{1,50}$", v):
+        if not re.match(r"^[a-zA-Z\s\-']{0,50}$", v):
             raise ValueError("Names can only contain letters, spaces, and hyphens")
         return v
 

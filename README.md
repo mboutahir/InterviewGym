@@ -1,556 +1,357 @@
-#  InterviewGym - Enterprise-Grade AI Interview Coach
+# InterviewGym — AI Voice Interview Coach
 
-![Status](https://img.shields.io/badge/status-production--ready-success)
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue)
-![Security](https://img.shields.io/badge/Security-Enterprise-green)
-![License](https://img.shields.io/badge/license-MIT-green)
+Practice job interviews by voice with an AI recruiter that has read your résumé.
+Upload a PDF résumé and a job description, answer six spoken questions, and get a
+scored report on your interview and on how well your résumé matches the role.
 
-> **Enterprise-grade AI interview platform with advanced security, type safety, and real-time voice interaction.** Practice interview skills with an intelligent AI recruiter that adapts to your responses and provides detailed performance analytics.
-
-**Latest Updates (v2.0):**
-- Clerk JWT authentication with RS256 token verification
-- Type-safe API with standardized responses
-- Clerk-ID based user identification (no email dependency)
-- IDOR vulnerability patched across all endpoints
-- Role-based access control & authorization checks
-- Unified state management for interview flow
-- Production-ready error handling & logging
-- Rate limiting on all public endpoints
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)
+![LLM](https://img.shields.io/badge/LLM-Ollama%20%7C%20Groq-orange)
 
 ---
 
-##  Table of Contents
+## Table of Contents
 
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Quick Start](#-quick-start)
-- [Security Implementation](#-security-implementation)
-- [API Documentation](#-api-documentation)
-- [Project Structure](#-project-structure)
-- [Development](#-development)
-- [Interview Q&A](#-interview-qa)
-- [Contributing](#-contributing)
-
----
-
-##  Features
-
-###  **Interactive AI Interviews**
-- Real-time voice-based interviews with adaptive AI
-- Dynamic conversation flow that responds to candidate answers
-- Automatic fallback to backup questions for continuity
-- Smart icebreakers and interview pacing
-- Seamless audio input/output with Web Speech API
-
-###  **Resume Analysis & Scoring**
-- Automated resume vs. job description matching
-- Keyword extraction and gap identification
-- AI-powered resume scoring (0-10 scale)
-- Personalized feedback on resume-to-role fit
-- PDF text extraction with semantic understanding
-
-###  **Performance Feedback & Analytics**
-- Real-time interview scoring (0-10 scale)
-- Detailed feedback report with strengths & areas for improvement
-- Multi-criteria evaluation (communication, technical, presentation)
-- Session history with progress tracking
-- Historical comparison & improvement suggestions
-
-###  **Enterprise Security**
-- Clerk JWT authentication (RS256 algorithm)
-- Token-based session isolation (clerk_id as primary key)
-- Role-based access control (RBAC)
-- IDOR vulnerability prevention on all endpoints
-- Rate limiting: 5/hour (create), 20/min (chat), 10/hr (end_session)
-- No stack trace exposure in error responses
-
-###  **Beautiful & Responsive UI**
-- Dark gradient theme with glassmorphism effects
-- Real-time state management with visual feedback
-- Loading & error boundary components
-- Mobile-responsive design
-- Accessible color contrasts (WCAG AA compliant)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Security](#security)
+- [Project Structure](#project-structure)
+- [Design Decisions](#design-decisions)
+- [Known Limitations & Roadmap](#known-limitations--roadmap)
 
 ---
 
-##  Tech Stack
+## Features
 
-### **Frontend Stack**
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| **Next.js** | 16 | SSR React framework |
-| **TypeScript** | 5.0+ | Type-safe JavaScript |
-| **Clerk** | Latest | Authentication & token management |
-| **Tailwind CSS** | 3.x | Utility-first styling |
-| **Lucide React** | Latest | Icon library |
-| **Web Speech API** | Native | Voice I/O |
+**Voice interview**
+- The AI recruiter ("Alex") opens with an icebreaker, then asks follow-up questions
+  grounded in your answers, the job description and your résumé.
+- Speech-to-text runs in the browser (Web Speech API); the answer is sent
+  automatically after 3 seconds of silence.
+- Replies are spoken back with neural text-to-speech (Edge TTS).
+- The interview ends automatically after 6 questions, or manually at any time.
+- If the LLM call fails, the interviewer falls back to a generic question so the
+  conversation keeps going.
 
-### **Backend Stack**
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| **FastAPI** | Latest | Async Python web framework |
-| **Prisma ORM** | 0.15.0 | Type-safe database access |
-| **PostgreSQL** | 15+ | Relational database |
-| **Groq API** | Latest | LLM inference (Mixtral 8x7B) |
-| **LangChain** | Latest | LLM orchestration |
-| **ChromaDB** | Latest | Vector database for embeddings |
-| **Edge TTS** | Latest | Text-to-speech |
-| **Boto3 + MinIO** | Latest | S3-compatible storage |
-| **PyJWT** | 2.11.0 | JWT verification (RS256) |
+**Résumé-aware questions (RAG)**
+- The résumé PDF is split into chunks, embedded and stored in ChromaDB.
+- On every turn, the 3 chunks most similar to the candidate's answer are injected
+  into the prompt.
 
-### **Infrastructure**
-| Tool | Purpose |
-|------|---------|
-| **Docker & Docker Compose** | Containerization & orchestration |
-| **PostgreSQL** | Production database |
-| **MinIO** | S3-compatible local storage |
-| **Prisma Migrate** | Database version control |
+**Feedback report**
+- Interview score (0–10) with a summary, top 3 strengths and top 3 improvements.
+- Résumé-vs-job match score (0–100) with a summary and missing keywords.
+- Dashboard with the history of all your sessions.
+
+**Pluggable LLM**
+- Runs fully **local with Ollama** (free, résumés never leave your machine) or in
+  the **cloud with Groq** (much faster). Switching is one line in `.env`.
 
 ---
 
-##  Architecture
+## Tech Stack
 
-### **Authentication Flow**
+| Layer | Technology | Purpose |
+|---|---|---|
+| Frontend | Next.js 16 (App Router), React 19, TypeScript | UI |
+| | Clerk | Sign-in / sign-up, JWT session tokens |
+| | Tailwind CSS 4, Lucide icons | Styling |
+| | Web Speech API | Speech-to-text in the browser |
+| Backend | FastAPI (async Python 3.11) | REST API |
+| | Pydantic v2 | Request validation, typed response envelope |
+| | Prisma Client Python + PostgreSQL 15 | Data access, migrations |
+| | PyJWT (RS256) | Verifies Clerk tokens locally |
+| | slowapi | Per-IP rate limiting |
+| AI | OpenAI-compatible client → **Ollama** (`qwen2.5:3b`) or **Groq** (`llama-3.3-70b-versatile`) | Interview questions, feedback, résumé scoring |
+| | LangChain + `all-MiniLM-L6-v2` (Hugging Face) + ChromaDB | RAG over the résumé |
+| | Edge TTS | Text-to-speech |
+| Storage | MinIO via boto3 (S3 API) | Résumé PDF storage |
+| Infra | Docker Compose, uv | Local Postgres + MinIO, Python deps |
 
-```
-User (Clerk)
-    ↓
-Frontend (getToken)
-    ↓ Bearer ${token}
-Backend (verify_clerk_token)
-    ↓
-JWT Validation (RS256)
-    ↓
-ClerkID Extraction
-    ↓
-User Isolation & Authorization
-```
+---
 
-### **System Diagram**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (Next.js)                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │  Home Page   │  │Interview Page│  │  Dashboard   │       │
-│  │ (Setup form) │  │   (Chat)     │  │  (Reports)   │       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
-│         │                 │                 │                │
-│         │    HTTP/JSON    │                 │                │
-│         └─────────────────┴─────────────────┘                │
-│                           │                                   │
-└───────────────────────────┼───────────────────────────────────┘
-                            │
-                    ┌───────▼────────┐
-                    │   FastAPI      │
-                    │   Backend      │
-                    └───────┬────────┘
-                            │
-          ┌─────────────────┼─────────────────┐
-          │                 │                 │
-     ┌────▼───┐        ┌────▼────┐      ┌───▼──────┐
-     │ Prisma │        │RAGService│      │InterviewCoach│
-     │   ORM  │        │(LangChain)      │(AI Logic)    │
-     └────┬───┘        └────┬────┘      └───┬──────┘
-          │                 │                │
-    ┌─────▼──────┐   ┌──────▼──────┐   ┌───▼──────┐
-    │ PostgreSQL │   │   ChromaDB   │   │Groq API  │
-    │ Database   │   │(Vector DB)   │   │(LLM)     │
-    └────────────┘   └──────────────┘   └──────────┘
-```
-
-### **Data Flow**
+## Architecture
 
 ```
-1. USER UPLOADS RESUME
-   User Form → Frontend → FastAPI (/create_session)
-   ↓
-2. BACKEND PROCESSES
-   a) Extract resume text (PyPDF)
-   b) Split into chunks (LangChain)
-   c) Create embeddings (Hugging Face)
-   d) Store in vector DB (ChromaDB)
-   e) Create database session (Prisma → PostgreSQL)
-   ↓
-3. INTERVIEW STARTS
-   User speaks → Web Speech API → /chat endpoint
-   ↓
-4. AI PROCESSES
-   a) Search relevant resume chunks (ChromaDB)
-   b) Generate response with Groq LLM
-   c) Convert response to audio (Edge TTS)
-   d) Send back to frontend
-   ↓
-5. INTERVIEW ENDS
-   User finishes → /end_session endpoint
-   ↓
-6. ANALYSIS
-   a) Generate interview feedback (Groq LLM)
-   b) Score resume match (Groq LLM)
-   c) Store results (Prisma → PostgreSQL)
-    d) Display in dashboard
+┌──────────────────────── Browser (Next.js + Clerk) ────────────────────────┐
+│  Setup form  ──►  Interview page (mic + audio)  ──►  Dashboard            │
+│        every request: Authorization: Bearer <Clerk JWT>                   │
+└───────────────────────────────────┬───────────────────────────────────────┘
+                                    │ HTTP (multipart / JSON / audio)
+                           ┌────────▼────────┐
+                           │     FastAPI      │  Depends(get_current_user)
+                           │                  │  → verifies JWT (RS256)
+                           └──┬─────┬─────┬──┬┘
+          ┌───────────────────┘     │     │  └──────────────────┐
+   ┌──────▼──────┐   ┌──────────────▼┐  ┌─▼──────────────┐  ┌───▼──────┐
+   │ PostgreSQL  │   │  RAGService   │  │ InterviewCoach │  │  MinIO   │
+   │  (Prisma)   │   │ LangChain +   │  │ LLM + Edge TTS │  │ (boto3)  │
+   │             │   │ ChromaDB      │  │                │  │          │
+   └─────────────┘   └───────────────┘  └───────┬────────┘  └──────────┘
+                                                │ OpenAI-compatible API
+                                     ┌──────────┴──────────┐
+                                     │ Ollama (local)  or  │
+                                     │ Groq (cloud)        │
+                                     └─────────────────────┘
 ```
 
-### **Smart Infrastructure Choice: S3 with MinIO**
+### Request flow
 
-This project uses **Boto3** (AWS SDK) with **MinIO** as the S3-compatible storage backend. Here's why this is a smart architectural decision:
+1. **`POST /create_session`** — validate the PDF and form fields → upload the PDF
+   to MinIO → extract its text into Postgres → chunk (500 chars, 50 overlap),
+   embed and store the chunks in ChromaDB tagged with the session ID.
+2. **`POST /chat/{id}`** — check the session belongs to the caller → retrieve the
+   top-3 résumé chunks for the answer → send system prompt + last 10 messages +
+   answer to the LLM → convert the reply to MP3 → return the audio, with the reply
+   text in the `X-AI-Response-Text` header.
+3. After the **6th question** (or on **`POST /end_session/{id}`**) — the LLM
+   produces the interview report and the résumé analysis in JSON mode; both are
+   stored and the session is marked `COMPLETE`.
+4. **`GET /dashboard`** — returns the caller's sessions, newest first.
 
-**Benefits:**
--  **Drop-in AWS S3 Compatibility** - Uses standard S3 API via Boto3, so switching to AWS is just changing environment variables
--  **Cost-Efficient Development** - MinIO runs locally/in Docker, no AWS charges during development
--  **Production-Ready** - Already using industry-standard AWS SDK, scales seamlessly to real S3
--  **File Persistence** - Actual file storage (not mocked), tests real S3 operations locally
--  **Zero Migration Risk** - Code unchanged when deploying to AWS production
+### Data model
 
-**Environment Variables:**
-```bash
-# Local Development (MinIO)
-AWS_ENDPOINT_URL="http://localhost:9000"
-AWS_BUCKET_NAME="resumes"
-
-# Production (AWS S3) - Just change the endpoint URL
-AWS_ENDPOINT_URL="https://s3.amazonaws.com"
+```
+User 1 ── * InterviewSessions 1 ── * InterviewMessage
+(clerkId unique)  (job, résumé text/URL,      (role: user | assistant,
+                   status, scores, feedback)   content, createdAt)
 ```
 
----##  Quick Start
+---
 
-### **Prerequisites**
-- Node.js 18+ and npm
-- Python 3.9+
-- Docker & Docker Compose
-- PostgreSQL (or use Docker)
+## Quick Start
 
-### **1. Clone Repository**
+### Prerequisites
+
+- Docker Desktop
+- Python 3.11 and [uv](https://docs.astral.sh/uv/)
+- Node.js 20+
+- A free [Clerk](https://clerk.com) application
+- [Ollama](https://ollama.com) (for the local LLM) **or** a [Groq API key](https://console.groq.com/keys)
+
+### 1. Clone and configure
 
 ```bash
-git clone https://github.com/yourusername/interview-gym.git
-cd interview-gym
+git clone https://github.com/mboutahir/InterviewGym.git
+cd InterviewGym
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
 ```
 
-### **2. Setup Environment Variables**
+Fill in the Clerk keys in both files (see [Configuration](#configuration)).
 
-**Backend (`.env` in `/backend`)**
-```bash
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/recruiter_db?schema=public"
-
-# AI/LLM
-GROQ_API_KEY="gsk_your_key_here"
-
-# AWS S3 (optional, currently mocked)
-AWS_ENDPOINT_URL="http://localhost:9000"
-AWS_ACCESS_KEY_ID="minioadmin"
-AWS_SECRET_ACCESS_KEY="minioadmin"
-AWS_BUCKET_NAME="resumes"
-AWS_REGION="us-east-1"
-```
-
-**Frontend (`.env.local` in `/frontend`)**
-```bash
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
-CLERK_SECRET_KEY="sk_test_..."
-NEXT_PUBLIC_API_URL="http://localhost:8000"
-```
-
-### **3. Start Database**
+### 2. Start Postgres and MinIO
 
 ```bash
-# Using Docker Compose
-docker-compose up -d db
-
-# Or use existing PostgreSQL
-psql -h localhost -U user -d recruiter_db
+docker compose up -d     # Postgres on localhost:5433, MinIO on :9000 (console :9001)
 ```
 
-### **4. Setup Backend**
+### 3. Start the LLM (local option)
+
+```bash
+ollama serve             # or open the Ollama app
+ollama pull qwen2.5:3b
+```
+
+Using Groq instead? Set `LLM_PROVIDER="groq"` and `GROQ_API_KEY` in `backend/.env`.
+
+### 4. Backend
 
 ```bash
 cd backend
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup Prisma
+uv sync
+source .venv/bin/activate
 prisma generate
-
-# Run migrations
-prisma migrate dev --name init
-
-# Start server
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+prisma migrate deploy
+uvicorn app.main:app --reload --port 8000
 ```
 
-### **5. Setup Frontend**
+The first start downloads the embedding model (~90 MB).
+
+### 5. Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
-Visit **http://localhost:3000** in your browser! 🎉
+Open **http://localhost:3000** in **Chrome or Edge** (the Web Speech API is not
+available in Firefox/Safari) and allow microphone access.
 
 ---
 
-##  Environment Setup
+## Configuration
 
-### **Development** (Local)
+### `backend/.env`
 
-```bash
-# Terminal 1: Database
-docker-compose up -d db
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | `postgresql://user:password@localhost:5433/recruiter_db?schema=public` |
+| `LLM_PROVIDER` | `ollama` (local) or `groq` (cloud) |
+| `LLM_MODEL` | Optional model override (defaults: `qwen2.5:3b` / `llama-3.3-70b-versatile`) |
+| `OLLAMA_BASE_URL` | Optional, defaults to `http://localhost:11434/v1` |
+| `GROQ_API_KEY` | Required only when `LLM_PROVIDER=groq` |
+| `CLERK_JWT_PUBLIC_KEY` | Clerk's RSA public key in PEM format, newlines written as `\n` |
+| `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET_NAME`, `AWS_REGION` | MinIO / S3 settings (defaults match `docker-compose.yml`) |
 
-# Terminal 2: Backend
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload
+`CLERK_JWT_PUBLIC_KEY` is shown in the Clerk dashboard under **API Keys → JWT
+public key**, or can be derived from
+`https://<your-instance>.clerk.accounts.dev/.well-known/jwks.json`.
 
-# Terminal 3: Frontend
-cd frontend
-npm run dev
-```
+### `frontend/.env.local`
 
-### **Production** (Docker)
-
-```bash
-# Build and run all services
-docker-compose up --build -d
-
-# Check logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-```
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (`pk_test_…`) |
+| `CLERK_SECRET_KEY` | Clerk secret key (`sk_test_…`) |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `…_SIGN_UP_URL` | `/sign-in`, `/sign-up` |
+| `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` / `…_AFTER_SIGN_UP_URL` | `/` |
 
 ---
 
-##  API Documentation
+## API Reference
 
-### **Base URL**
-```
-http://localhost:8000
-```
+All endpoints except `/health` require `Authorization: Bearer <Clerk JWT>`.
+JSON responses use one envelope:
 
-### **1. Create Interview Session**
-```http
-POST /create_session
-Content-Type: multipart/form-data
-
-Parameters:
-  - file (PDF) - Resume file
-  - jobTitle (string) - Target job title
-  - jobDescription (string) - Job posting text
-  - first_name (string) - User first name
-  - last_name (string) - User last name
-  - email (string) - User email
-```
-
-**Response:**
 ```json
 {
-  "status": "success",
-  "sessionId": "uuid-string"
+  "success": true,
+  "statusCode": 200,
+  "message": "…",
+  "data": { },
+  "error": null,
+  "timestamp": "2026-10-16T12:00:00+00:00"
 }
 ```
 
----
+| Method | Path | Body | Returns | Rate limit |
+|---|---|---|---|---|
+| `GET` | `/health` | — | `{"status": "healthy", "database": "connected"}` | — |
+| `POST` | `/create_session` | multipart: `file` (PDF ≤ 5 MB), `jobTitle`, `jobDescription`, `first_name`, `last_name` | `data: {sessionId, jobTitle, createdAt}` | 5 / hour |
+| `POST` | `/chat/{session_id}` | form: `user_message` | `audio/mpeg` + headers `X-AI-Response-Text` (URL-encoded), `X-Session-Complete: true` on the last question; JSON `{"isSessionComplete": true}` once the interview is over | 20 / minute |
+| `POST` | `/end_session/{session_id}` | — | `data: {interview_feedback, resume_analysis}` | 10 / hour |
+| `GET` | `/dashboard` | — | `data: [session, …]` for the caller | 30 / minute |
 
-### **2. Chat with AI**
-```http
-POST /chat/{sessionId}
-Content-Type: application/x-www-form-urlencoded
+Interactive docs: **http://localhost:8000/docs** (Swagger UI).
 
-Parameters:
-  - user_message (string) - User's response
-```
+Report formats:
 
-**Response:**
-```
-Audio/MP3 file
-Headers: X-AI-Response-Text: <encoded AI response>
-```
-
----
-
-### **3. End Session & Get Feedback**
-```http
-POST /end_session/{sessionId}
-```
-
-**Response:**
 ```json
-{
-  "status": "success",
-  "data": {
-    "interview_feedback": {
-      "score": 8,
-      "feedback": "Strong communication skills...",
-      "strengths": ["Problem-solving", "..."],
-      "improvements": ["Technical depth", "..."]
-    },
-    "resume_analysis": {
-      "score": 75,
-      "feedback": "Good match overall...",
-      "keywords_missing": ["Kubernetes", "..."]
-    }
-  }
-}
+// interview_feedback
+{ "score": 7, "feedback": "…", "strengths": ["…"], "improvements": ["…"] }
+
+// resume_analysis
+{ "score": 50, "feedback": "…", "keywords_missing": ["Docker", "…"] }
 ```
 
 ---
 
-### **4. Get Dashboard**
-```http
-GET /dashboard/{userEmail}
-```
+## Security
 
-**Response:**
-```json
-[
-  {
-    "id": "session-id",
-    "jobTitle": "Senior Engineer",
-    "status": "COMPLETE",
-    "rating": 8,
-    "resumeScore": 75,
-    "createdAt": "2026-03-03T...",
-    ...
-  }
-]
-```
+- **Authentication** — Clerk issues RS256-signed JWTs. The backend verifies the
+  signature and expiry locally with Clerk's public key (no network call per
+  request) and pins the algorithm to `RS256`.
+- **Authorization / IDOR protection** — every session endpoint checks that the
+  session's owner `clerkId` matches the token's `sub`; otherwise it returns `403`.
+  The dashboard only queries the caller's own sessions.
+- **Input validation** — Pydantic validators enforce field lengths, reject
+  template/HTML characters in job fields, and restrict uploads to `.pdf` files
+  with an `application/pdf` content type, ≤ 5 MB, no path traversal in the name.
+- **Rate limiting** — per-IP limits on every endpoint (see table above) to protect
+  the expensive LLM / embedding calls.
+- **Error handling** — clients get a generic message for server errors; full stack
+  traces go to `backend/logs/` only.
+- **CORS** — only the frontend origin is allowed; only the two custom response
+  headers the UI needs are exposed.
+- **Route protection** — Next.js middleware redirects signed-out users to `/sign-in`.
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
-interview-gym/
-├── frontend/                    # Next.js React app
+InterviewGym/
+├── docker-compose.yml          # Postgres + MinIO
+├── backend/
 │   ├── app/
-│   │   ├── page.tsx            # Home (setup form)
-│   │   ├── layout.tsx          # App wrapper + Clerk
-│   │   ├── dashboard/
-│   │   │   └── page.tsx        # Session history + reports
-│   │   ├── interview/
-│   │   │   └── [session_id]/   # Interview chat UI
-│   │   ├── sign-in/            # Clerk auth page
-│   │   └── sign-up/            # Clerk auth page
-│   ├── lib/
-│   │   └── api.ts             # API configuration
-│   ├── middleware.ts          # Auth middleware
-│   └── package.json
-│
-├── backend/                     # FastAPI Python app
-│   ├── app/
-│   │   ├── main.py            # FastAPI app + routes
-│   │   ├── utils.py           # Helper functions
+│   │   ├── main.py             # FastAPI app, routes, CORS, rate limiting
+│   │   ├── auth.py             # Clerk JWT verification dependency
+│   │   ├── models.py           # Pydantic request/response models
+│   │   ├── exceptions.py       # Typed HTTP exceptions
+│   │   ├── logging_config.py   # Console + file logging
+│   │   ├── utils.py            # PDF text extraction
 │   │   └── services/
-│   │       ├── ai.py          # Interview coach (Groq)
-│   │       ├── rag.py         # Resume search (LangChain)
-│   │       └── s3.py          # File storage (mock)
+│   │       ├── ai.py           # InterviewCoach: LLM prompts, feedback, TTS
+│   │       ├── rag.py          # Chunking, embeddings, ChromaDB search
+│   │       └── s3.py           # MinIO/S3 upload with retries
 │   ├── prisma/
-│   │   ├── schema.prisma      # Database schema
-│   │   └── migrations/        # DB version history
-│   ├── requirements.txt       # Python dependencies
-│   ├── Dockerfile            # Container image
-│   └── .env                  # Environment variables
-│
-├── docker-compose.yml        # Multi-container config
-├── README.md                # This file
-└── CODE_REVIEW.md           # Detailed code analysis
+│   │   ├── schema.prisma       # Data model
+│   │   └── migrations/
+│   ├── pyproject.toml / uv.lock
+│   ├── requirements.txt        # Used by the Dockerfile
+│   └── .env.example
+└── frontend/
+    ├── app/
+    │   ├── page.tsx            # Setup form (résumé + job)
+    │   ├── interview/[session_id]/page.tsx   # Voice interview
+    │   ├── dashboard/page.tsx  # History + reports
+    │   ├── sign-in/, sign-up/  # Clerk pages
+    │   ├── types/, utils/      # API types, fetch helpers, type guards
+    │   └── layout.tsx          # ClerkProvider
+    ├── middleware.ts           # Route protection
+    └── .env.example
 ```
 
 ---
 
-## Known Limitations
+## Design Decisions
 
-### **Current (MVP Stage)**
-
-1. **Resume Storage**: Using MinIO (S3-compatible) for local development, production-ready for AWS S3
-2. **Audio Quality**: Browser Web Speech API limitations
-3. **Interview Duration**: No timeout mechanism (session can hang)
-4. **Concurrent Users**: Single database, no horizontal scaling
-5. **Silence Detection**: Uses browser-native detection (inconsistent across browsers)
-6. **Language Support**: English only
-7. **Mobile**: Not fully optimized for mobile devices
-
-### **Security Note for Development**
-- GROQ_API_KEY is visible in `.env` file
-- Database credentials are hardcoded (dev only!)
-- No rate limiting on API endpoints
-- Input validation is minimal
-
-**These are acceptable for portfolio/demo but MUST be fixed before production!**
-
-See `CODE_REVIEW.md` for detailed analysis and recommended fixes.
+- **One OpenAI-compatible client for every LLM.** Ollama and Groq both expose the
+  OpenAI chat-completions API, so the provider is a config value, not a code
+  path. It trades latency (Groq ≈ 2–3 s per turn) against cost and privacy (Ollama
+  is free and fully local, ≈ 10–20 s per turn on an M-series laptop).
+- **RAG instead of the full résumé in every prompt.** Keeps each prompt small and
+  focused on what the candidate just talked about. The full text is still used
+  for the one-off résumé-match analysis.
+- **Session ID as Chroma metadata.** All résumés share one collection; a metadata
+  filter isolates each session's chunks.
+- **Speech-to-text in the browser, text-to-speech on the server.** Browser STT is
+  free and adds no upload latency; server TTS gives a consistent voice.
+- **JSON mode for reports.** `response_format={"type": "json_object"}` makes the
+  reports machine-readable and lets the dashboard render them as structured data.
+- **MinIO with the S3 API.** Local development needs no AWS account, and moving to
+  AWS S3 is an environment-variable change.
+- **Local JWT verification.** RS256 lets the backend verify tokens with a public
+  key only, with no secret and no call to Clerk on each request.
 
 ---
 
-##  Future Improvements
+## Known Limitations & Roadmap
 
-### **Short Term (v1.1)**
-- [x] ~~Implement real AWS S3 storage~~ - **Done with MinIO**
-- [ ] Add database backup strategy
-- [ ] Implement proper error handling & logging
-- [ ] Add rate limiting (prevent API abuse)
-- [ ] Comprehensive API documentation (Swagger/OpenAPI)
-- [ ] Deploy MinIO + backend to production server
-
-### **Medium Term (v2.0)**
-- [ ] Multi-language support (Spanish, French, etc.)
-- [ ] Mobile app (React Native)
-- [ ] Analytics dashboard for admin
-- [ ] Email notifications
-- [ ] Video interview feature
-- [ ] Interview recordings/playback
-
-### **Long Term (v3.0+)**
-- [ ] Horizontal scaling (Kubernetes)
-- [ ] Real-time collaboration features
-- [ ] Integration with LinkedIn/Indeed
-- [ ] Premium subscription model
-- [ ] Resume builder tool
-- [ ] Mock interview marketplace
+- Embedding, S3 upload and report generation run inside the request; they should
+  move to a background worker (e.g. arq/Celery) so the event loop is never blocked.
+- The rate limiter is in-memory and per-process; use Redis for multiple instances.
+- The Clerk public key is static; fetching and caching the JWKS would handle key
+  rotation automatically.
+- The frontend calls `http://127.0.0.1:8000` directly; it should come from an
+  environment variable for deployment.
+- Speech recognition only works in Chromium-based browsers; English only.
+- No automated test suite yet (the auth dependency is designed to be overridden
+  with `app.dependency_overrides` in tests).
+- Vectors are never deleted from ChromaDB when a session ends.
 
 ---
 
-##  Contributing
+## Author
 
-Contributions are welcome! Please follow these steps:
-
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/feature`)
-3. **Commit changes** (`git commit -m 'Add  feature'`)
-4. **Push to branch** (`git push origin feature/feature`)
-5. **Open Pull Request**
-
-
-##  Author
-
-**Mohammed Boutahir**
-- **GitHub**: [github.com/mboutahir](#)
-- **LinkedIn**: [https://www.linkedin.com/in/mohammed-boutahir-66b333281/](#)
-
----
-
-##  Changelog
-
-### **v1.0.0** (March 2026)
-- Initial release
-- Core interview functionality
-- Resume analysis
-- Dashboard with history
-
----
-
-**Made with ❤️ by Mohammed Boutahir**
-
+**Mohammed Boutahir** — backend design and implementation
+- GitHub: [github.com/mboutahir](https://github.com/mboutahir)
+- LinkedIn: [mohammed-boutahir](https://www.linkedin.com/in/mohammed-boutahir-66b333281/)

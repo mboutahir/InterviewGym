@@ -3,7 +3,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from jwt.exceptions import InvalidTokenError
 import os
+from dotenv import load_dotenv
 from app.logging_config import logger
+
+# Load .env here too: CLERK_JWT_PUBLIC_KEY is read at import time
+load_dotenv()
 
 security = HTTPBearer()
 
@@ -38,11 +42,6 @@ async def verify_clerk_token(
         )
 
     token = credentials.credentials
-    import base64, json
-    payload_b64 = token.split(".")[1]
-    payload_b64 += "=" * (4 - len(payload_b64) % 4)
-    decoded = json.loads(base64.b64decode(payload_b64))
-    logger.info(f"RAW TOKEN PAYLOAD: {json.dumps(decoded, indent=2)}")
 
     try:
         # Verify locally — no network call needed
